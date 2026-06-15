@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   Search,
-  Flame,
   Bookmark,
   BookmarkCheck,
   Building2,
@@ -14,6 +13,7 @@ import {
   ExternalLink,
   Share2,
   SearchX,
+  Star,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -66,17 +66,13 @@ export function CompetitionsBrowser({
     });
 
     list = [...list].sort((a, b) => {
-      // featured always first
       if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
       if (sort === "deadline") {
         const da = daysUntil(a.deadline) ?? 99999;
         const db = daysUntil(b.deadline) ?? 99999;
         return da - db;
       }
-      if (sort === "newest") {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }
-      // "saved" proxy: featured first then newest (cross-user counts are RLS-protected)
+      if (sort === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return list;
@@ -91,64 +87,40 @@ export function CompetitionsBrowser({
       return;
     }
     const supabase = getSupabaseBrowser();
-    if (!supabase) {
-      toast.error("Supabase not configured.");
-      return;
-    }
+    if (!supabase) { toast.error("Supabase not configured."); return; }
     setSavingId(comp.id);
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth.user?.id;
-    if (!uid) {
-      setSavingId(null);
-      toast.error("Please log in again.");
-      return;
-    }
+    if (!uid) { setSavingId(null); toast.error("Please log in again."); return; }
     const already = savedIds.has(comp.id);
     try {
       if (already) {
         await supabase.from("participation").delete().eq("user_id", uid).eq("competition_id", comp.id);
-        setSavedIds((s) => {
-          const n = new Set(s);
-          n.delete(comp.id);
-          return n;
-        });
-        toast.success("Removed from your tracker");
+        setSavedIds((s) => { const n = new Set(s); n.delete(comp.id); return n; });
+        toast.success("Removed from tracker");
       } else {
-        await supabase
-          .from("participation")
-          .insert({ user_id: uid, competition_id: comp.id, status: "interested" });
-        await supabase.from("analytics_events").insert({
-          event_type: "competition_saved",
-          user_id: uid,
-          reference_id: comp.id,
-        });
+        await supabase.from("participation").insert({ user_id: uid, competition_id: comp.id, status: "interested" });
+        await supabase.from("analytics_events").insert({ event_type: "competition_saved", user_id: uid, reference_id: comp.id });
         setSavedIds((s) => new Set(s).add(comp.id));
-        toast.success("Saved to your tracker 🔥");
+        toast.success("Saved to your tracker");
       }
-    } catch {
-      toast.error("Something went wrong.");
-    } finally {
-      setSavingId(null);
-    }
+    } catch { toast.error("Something went wrong."); }
+    finally { setSavingId(null); }
   }
 
   function share(comp: Competition) {
     const url = `${window.location.origin}/competitions?c=${comp.id}`;
-    if (navigator.share) {
-      navigator.share({ title: comp.title, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard");
-    }
+    if (navigator.share) navigator.share({ title: comp.title, url }).catch(() => {});
+    else { navigator.clipboard.writeText(url); toast.success("Link copied"); }
   }
 
   return (
     <div>
       {/* filter bar */}
-      <div className="sticky top-16 z-30 -mx-2 mb-6 rounded-xl border border-charcoal/10 bg-white/90 p-3 shadow-sm backdrop-blur">
+      <div className="sticky top-[74px] z-30 -mx-2 mb-6 rounded-xl border border-ink/10 bg-panel/95 p-3 shadow-hard-card backdrop-blur">
         <div className="flex flex-col gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
             <Input
               placeholder="Search competitions, organisers…"
               value={query}
@@ -159,11 +131,7 @@ export function CompetitionsBrowser({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="">All categories</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </Select>
             <Select value={region} onChange={(e) => setRegion(e.target.value)}>
               <option value="">All regions</option>
@@ -191,8 +159,8 @@ export function CompetitionsBrowser({
         </div>
       </div>
 
-      <p className="mb-4 text-sm text-muted-foreground">
-        Showing <span className="font-semibold text-charcoal">{filtered.length}</span> competition
+      <p className="mb-4 text-sm text-ink-faint">
+        Showing <span className="font-semibold text-ink">{filtered.length}</span> competition
         {filtered.length === 1 ? "" : "s"}
       </p>
 
@@ -231,47 +199,42 @@ export function CompetitionsBrowser({
           <div>
             <div className="mb-3 flex flex-wrap items-center gap-2">
               {active.is_featured && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-fire px-2.5 py-0.5 text-xs font-semibold text-white">
-                  <Flame className="h-3 w-3" /> Featured
+                <span className="inline-flex items-center gap-1 rounded-full bg-ember px-2.5 py-0.5 text-xs font-semibold text-white">
+                  <Star className="h-3 w-3" /> Featured
                 </span>
               )}
               <CategoryBadge category={active.category} />
               <FormatBadge format={active.format} />
               <RegionBadge region={active.region} />
             </div>
-            <h2 className="pr-6 font-heading text-2xl font-bold text-charcoal">{active.title}</h2>
+
+            <h2 className="pr-6 font-heading text-2xl font-medium text-ink">{active.title}</h2>
             {active.organizer && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-faint">
                 <Building2 className="h-4 w-4" /> {active.organizer}
               </p>
             )}
 
-            <div className="mt-5 rounded-xl bg-muted/60 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="mt-5 rounded-xl border border-ink/10 bg-paper p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
                 Registration closes in
               </p>
               <Countdown deadline={active.deadline} />
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-ink-faint">
                 Deadline: {formatDate(active.deadline)} · Event: {formatDate(active.event_date)}
               </p>
             </div>
 
             {active.description && (
-              <p className="mt-5 whitespace-pre-line text-sm leading-relaxed text-charcoal/90">
+              <p className="mt-5 whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">
                 {active.description}
               </p>
             )}
 
             <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-              {active.eligibility && (
-                <Detail label="Eligibility" value={active.eligibility} />
-              )}
+              {active.eligibility && <Detail label="Eligibility" value={active.eligibility} />}
               {active.prize && (
-                <Detail
-                  label="Prize"
-                  value={active.prize}
-                  icon={<Trophy className="h-4 w-4 text-fire" />}
-                />
+                <Detail label="Prize" value={active.prize} icon={<Trophy className="h-4 w-4 text-ember" />} />
               )}
             </dl>
 
@@ -281,24 +244,18 @@ export function CompetitionsBrowser({
                   href={active.registration_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={buttonVariants({ className: "flex-1" })}
+                  className={buttonVariants({ variant: "ember", className: "flex-1" })}
                 >
                   Register now <ExternalLink className="h-4 w-4" />
                 </a>
               )}
               <Button
-                variant={savedIds.has(active.id) ? "subtle" : "outline"}
+                variant={savedIds.has(active.id) ? "subtle" : "sketch"}
                 onClick={(e) => toggleSave(active, e)}
               >
-                {savedIds.has(active.id) ? (
-                  <>
-                    <BookmarkCheck className="h-4 w-4" /> Saved
-                  </>
-                ) : (
-                  <>
-                    <Bookmark className="h-4 w-4" /> Save
-                  </>
-                )}
+                {savedIds.has(active.id)
+                  ? <><BookmarkCheck className="h-4 w-4" /> Saved</>
+                  : <><Bookmark className="h-4 w-4" /> Save</>}
               </Button>
               <Button variant="ghost" size="icon" onClick={() => share(active)} aria-label="Share">
                 <Share2 className="h-4 w-4" />
@@ -311,33 +268,18 @@ export function CompetitionsBrowser({
   );
 }
 
-function Detail({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-}) {
+function Detail({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-charcoal/10 p-3">
-      <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {icon}
-        {label}
+    <div className="rounded-lg border border-ink/10 bg-paper p-3">
+      <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-faint">
+        {icon} {label}
       </dt>
-      <dd className="mt-1 text-sm text-charcoal">{value}</dd>
+      <dd className="mt-1 text-sm text-ink">{value}</dd>
     </div>
   );
 }
 
-function CompetitionCard({
-  comp,
-  saved,
-  saving,
-  onSave,
-  onOpen,
-}: {
+function CompetitionCard({ comp, saved, saving, onSave, onOpen }: {
   comp: Competition;
   saved: boolean;
   saving: boolean;
@@ -349,15 +291,15 @@ function CompetitionCard({
     <div
       onClick={onOpen}
       className={cn(
-        "group flex h-full cursor-pointer flex-col rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg",
-        comp.is_featured ? "border-fire/40 ring-1 ring-fire/20" : "border-charcoal/10"
+        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-[5px_5px_0_rgba(33,30,24,0.12)]",
+        comp.is_featured ? "border-ember/40 ring-1 ring-ember/15" : "border-ink/12"
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           {comp.is_featured && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-fire px-2 py-0.5 text-[11px] font-semibold text-white">
-              <Flame className="h-3 w-3" /> Featured
+            <span className="inline-flex items-center gap-1 rounded-full bg-ember px-2 py-0.5 text-[11px] font-semibold text-white">
+              <Star className="h-3 w-3" /> Featured
             </span>
           )}
           <CategoryBadge category={comp.category} />
@@ -368,23 +310,23 @@ function CompetitionCard({
           aria-label={saved ? "Unsave" : "Save"}
           className={cn(
             "shrink-0 rounded-lg p-2 transition-colors",
-            saved ? "bg-fire-50 text-fire" : "text-charcoal/40 hover:bg-muted hover:text-fire"
+            saved ? "bg-ember/10 text-ember" : "text-ink-faint hover:bg-paper hover:text-ember"
           )}
         >
           {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
         </button>
       </div>
 
-      <h3 className="font-heading text-base font-semibold leading-snug text-charcoal group-hover:text-fire">
+      <h3 className="font-heading text-[17px] font-medium leading-snug text-ink group-hover:text-ember">
         {comp.title}
       </h3>
       {comp.organizer && (
-        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+        <p className="mt-1 flex items-center gap-1 text-xs text-ink-faint">
           <Building2 className="h-3 w-3" /> {comp.organizer}
         </p>
       )}
       {comp.description && (
-        <p className="mt-2 line-clamp-2 flex-1 text-sm text-charcoal/70">{comp.description}</p>
+        <p className="mt-2 line-clamp-2 flex-1 text-sm text-ink-soft">{comp.description}</p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -392,11 +334,11 @@ function CompetitionCard({
         <RegionBadge region={comp.region} />
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-charcoal/5 pt-3">
+      <div className="mt-4 flex items-center justify-between border-t border-ink/8 pt-3">
         <span className={cn("flex items-center gap-1 text-sm font-medium", urgency.color)}>
           <CalendarClock className="h-4 w-4" /> {urgency.label}
         </span>
-        <span className="text-xs font-medium text-electric group-hover:underline">View details →</span>
+        <span className="text-xs font-medium text-ink-faint group-hover:text-ember transition-colors">View details →</span>
       </div>
     </div>
   );

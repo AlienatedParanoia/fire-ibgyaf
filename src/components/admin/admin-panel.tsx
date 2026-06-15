@@ -14,6 +14,8 @@ import {
   Clock,
   UserCheck,
   Radio,
+  PenSquare,
+  ClipboardList,
 } from "lucide-react";
 import type { AdminData } from "@/app/admin/page";
 import { cn, formatDate } from "@/lib/utils";
@@ -34,10 +36,14 @@ import { UsersSection, SectionHeading } from "./users-section";
 import { ApprovalsSection } from "./approvals-section";
 import { SubmissionsSection } from "./submissions-section";
 import { SettingsSection } from "./settings-section";
+import { CompetitionsManage } from "./competitions-manage";
+import { ClubsManage } from "./clubs-manage";
 
 type Section =
   | "overview"
   | "users"
+  | "competitions"
+  | "clubs"
   | "comp-approvals"
   | "club-approvals"
   | "submissions"
@@ -52,33 +58,37 @@ export function AdminPanel({ data }: { data: AdminData }) {
   const pendingSubs = data.submissions.filter((s) => s.status === "pending").length;
 
   const nav: { key: Section; label: string; icon: React.ElementType; badge?: number }[] = [
-    { key: "overview", label: "Overview", icon: LayoutGrid },
-    { key: "users", label: "User Management", icon: Users },
-    { key: "comp-approvals", label: "Competition Approvals", icon: Trophy, badge: pendingComps },
-    { key: "club-approvals", label: "Club Approvals", icon: Building2, badge: pendingClubs },
-    { key: "submissions", label: "Community Submissions", icon: Inbox, badge: pendingSubs },
-    { key: "analytics", label: "Analytics", icon: BarChart3 },
-    { key: "settings", label: "Settings", icon: Settings },
+    { key: "overview",       label: "Overview",               icon: LayoutGrid },
+    { key: "users",          label: "Users",                  icon: Users },
+    { key: "competitions",   label: "Manage Competitions",    icon: Trophy,      badge: data.competitions.length },
+    { key: "clubs",          label: "Manage Clubs",           icon: Building2,   badge: data.clubs.length },
+    { key: "comp-approvals", label: "Competition Approvals",  icon: ClipboardList, badge: pendingComps },
+    { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: pendingClubs },
+    { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: pendingSubs },
+    { key: "analytics",      label: "Analytics",              icon: BarChart3 },
+    { key: "settings",       label: "Settings",               icon: Settings },
   ];
 
   return (
     <div className="container py-8">
       <div className="mb-6">
-        <h1 className="font-heading text-3xl font-bold text-charcoal">Admin Panel</h1>
-        <p className="text-sm text-muted-foreground">Manage the F.I.R.E platform.</p>
+        <h1 className="font-heading text-3xl font-medium text-ink">Admin Panel</h1>
+        <p className="text-sm text-ink-soft">Manage the F.I.R.E platform.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         {/* sidebar */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <nav className="flex gap-1 overflow-x-auto rounded-xl border border-charcoal/10 bg-white p-1.5 shadow-sm lg:flex-col lg:overflow-visible">
+          <nav className="flex gap-1 overflow-x-auto rounded-xl border border-ink/10 bg-panel p-1.5 shadow-sm lg:flex-col lg:overflow-visible">
             {nav.map((n) => (
               <button
                 key={n.key}
                 onClick={() => setSection(n.key)}
                 className={cn(
                   "flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:w-full",
-                  section === n.key ? "bg-fire text-white shadow-sm" : "text-charcoal/70 hover:bg-muted"
+                  section === n.key
+                    ? "bg-ember text-white shadow-sm"
+                    : "text-ink-soft hover:bg-paper hover:text-ink"
                 )}
               >
                 <n.icon className="h-4 w-4 shrink-0" />
@@ -87,7 +97,7 @@ export function AdminPanel({ data }: { data: AdminData }) {
                   <span
                     className={cn(
                       "rounded-full px-1.5 text-xs font-semibold",
-                      section === n.key ? "bg-white/25" : "bg-fire text-white"
+                      section === n.key ? "bg-white/25 text-white" : "bg-ember/10 text-ember"
                     )}
                   >
                     {n.badge}
@@ -105,15 +115,17 @@ export function AdminPanel({ data }: { data: AdminData }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          {section === "overview" && <Overview data={data} />}
-          {section === "users" && <UsersSection users={data.users} />}
+          {section === "overview"       && <Overview data={data} />}
+          {section === "users"          && <UsersSection users={data.users} />}
+          {section === "competitions"   && <CompetitionsManage initial={data.competitions} />}
+          {section === "clubs"          && <ClubsManage initial={data.clubs} />}
           {section === "comp-approvals" && (
             <ApprovalsSection kind="competition" competitions={data.competitions} />
           )}
           {section === "club-approvals" && <ApprovalsSection kind="club" clubs={data.clubs} />}
-          {section === "submissions" && <SubmissionsSection submissions={data.submissions} />}
-          {section === "analytics" && <Analytics data={data} />}
-          {section === "settings" && <SettingsSection />}
+          {section === "submissions"    && <SubmissionsSection submissions={data.submissions} />}
+          {section === "analytics"      && <Analytics data={data} />}
+          {section === "settings"       && <SettingsSection />}
         </motion.div>
       </div>
     </div>
@@ -123,9 +135,9 @@ export function AdminPanel({ data }: { data: AdminData }) {
 /* ─────────────────────────── OVERVIEW ─────────────────────────── */
 function Overview({ data }: { data: AdminData }) {
   const kpis = [
-    { label: "Total Users", value: data.users.length, icon: Users, color: "text-fire bg-fire-50" },
-    { label: "Total Clubs", value: data.clubs.length, icon: Building2, color: "text-electric bg-electric-50" },
-    { label: "Total Competitions", value: data.competitions.length, icon: Trophy, color: "text-emerald-600 bg-emerald-50" },
+    { label: "Total Users",         value: data.users.length,                          icon: Users,      color: "text-ember bg-ember/10" },
+    { label: "Total Clubs",         value: data.clubs.length,                          icon: Building2,  color: "text-pen bg-pen/10" },
+    { label: "Total Competitions",  value: data.competitions.length,                   icon: Trophy,     color: "text-emerald-600 bg-emerald-50" },
     {
       label: "Pending Approvals",
       value:
@@ -134,7 +146,7 @@ function Overview({ data }: { data: AdminData }) {
       icon: Clock,
       color: "text-amber-600 bg-amber-50",
     },
-    { label: "Weekly Logins", value: weeklyLogins(data), icon: UserCheck, color: "text-purple-600 bg-purple-50" },
+    { label: "Weekly Logins",       value: weeklyLogins(data),                         icon: UserCheck,  color: "text-purple-600 bg-purple-50" },
     {
       label: "Submissions Pending",
       value: data.submissions.filter((s) => s.status === "pending").length,
@@ -144,7 +156,7 @@ function Overview({ data }: { data: AdminData }) {
   ];
 
   const signups = signupsOverTime(data);
-  const byCat = competitionsByCategory(data);
+  const byCat   = competitionsByCategory(data);
   const byGrade = usersByGrade(data);
 
   return (
@@ -152,12 +164,12 @@ function Overview({ data }: { data: AdminData }) {
       <SectionHeading title="Overview" subtitle="Platform health at a glance" />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {kpis.map((k) => (
-          <div key={k.label} className="rounded-xl border border-charcoal/10 bg-white p-5 shadow-sm">
+          <div key={k.label} className="rounded-xl border border-ink/10 bg-panel p-5 shadow-sm">
             <div className={cn("mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl", k.color)}>
               <k.icon className="h-5 w-5" />
             </div>
-            <p className="font-heading text-3xl font-bold text-charcoal">{k.value}</p>
-            <p className="text-sm text-muted-foreground">{k.label}</p>
+            <p className="font-heading text-3xl font-bold text-ink">{k.value}</p>
+            <p className="text-sm text-ink-soft">{k.label}</p>
           </div>
         ))}
       </div>
@@ -181,18 +193,18 @@ function Overview({ data }: { data: AdminData }) {
 
 /* ─────────────────────────── ANALYTICS ─────────────────────────── */
 function Analytics({ data }: { data: AdminData }) {
-  const wau = weeklyActiveUsers(data);
+  const wau      = weeklyActiveUsers(data);
   const topSaved = topSavedCompetitions(data);
-  const clubs = topClubs(data);
+  const clubs    = topClubs(data);
   const breakdown = participationBreakdown(data);
-  const epw = eventsPerWeek(data);
+  const epw      = eventsPerWeek(data);
 
   return (
     <div>
       <SectionHeading title="Analytics" subtitle="Engagement & participation insights" />
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard title="Weekly active users (last 8 weeks)">
-          <BarChartCard data={wau} color="#0066FF" />
+          <BarChartCard data={wau} color="#CC5230" />
         </ChartCard>
         <ChartCard title="Events logged per week">
           <LineChartCard data={epw} />
@@ -227,18 +239,18 @@ function RankList({ data, unit }: { data: { label: string; value: number }[]; un
         <li key={d.label}>
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="flex min-w-0 items-center gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-fire-50 text-xs font-bold text-fire">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ember/10 text-xs font-bold text-ember">
                 {i + 1}
               </span>
-              <span className="truncate text-charcoal">{d.label}</span>
+              <span className="truncate text-ink">{d.label}</span>
             </span>
-            <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            <span className="shrink-0 text-xs font-medium text-ink-faint">
               {d.value} {unit}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
+          <div className="h-2 overflow-hidden rounded-full bg-paper">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-fire to-electric"
+              className="h-full rounded-full bg-ember"
               style={{ width: `${(d.value / max) * 100}%` }}
             />
           </div>
@@ -289,15 +301,15 @@ function RealtimeFeed({
   }
 
   return (
-    <div className="rounded-xl border border-charcoal/10 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-ink/10 bg-panel p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 font-heading text-base font-semibold text-charcoal">
-          <Activity className="h-4 w-4 text-fire" /> Live activity
+        <h3 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
+          <Activity className="h-4 w-4 text-ember" /> Live activity
         </h3>
         <span
           className={cn(
             "flex items-center gap-1 text-xs font-medium",
-            live ? "text-emerald-600" : "text-muted-foreground"
+            live ? "text-emerald-600" : "text-ink-faint"
           )}
         >
           <Radio className="h-3 w-3" /> {live ? "Live" : "Offline"}
@@ -309,12 +321,12 @@ function RealtimeFeed({
         <ul className="max-h-[220px] space-y-3 overflow-y-auto scrollbar-thin">
           {events.map((e, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-fire" />
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-ember" />
               <div>
-                <p className="text-sm text-charcoal">
+                <p className="text-sm text-ink">
                   <span className="font-medium">{nameFor(e.user_id)}</span> {describe(e.event_type)}
                 </p>
-                <p className="text-xs text-muted-foreground">{formatDate(e.created_at)}</p>
+                <p className="text-xs text-ink-faint">{formatDate(e.created_at)}</p>
               </div>
             </li>
           ))}
@@ -326,8 +338,8 @@ function RealtimeFeed({
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-charcoal/10 bg-white p-5 shadow-sm">
-      <h3 className="mb-4 font-heading text-base font-semibold text-charcoal">{title}</h3>
+    <div className="rounded-xl border border-ink/10 bg-panel p-5 shadow-sm">
+      <h3 className="mb-4 font-heading text-base font-semibold text-ink">{title}</h3>
       {children}
     </div>
   );
@@ -335,7 +347,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 function Empty() {
   return (
-    <div className="flex h-[200px] flex-col items-center justify-center text-center text-sm text-muted-foreground">
+    <div className="flex h-[200px] flex-col items-center justify-center text-center text-sm text-ink-faint">
       <Inbox className="mb-2 h-8 w-8 opacity-40" />
       No data yet
     </div>

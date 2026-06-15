@@ -16,7 +16,7 @@ export function FormatBadge({ format }: { format: CompFormat }) {
   } as const;
   const { icon: Icon, label } = map[format] ?? map.online;
   return (
-    <Badge className="gap-1 bg-charcoal/5 text-charcoal/70">
+    <Badge className="gap-1 bg-ink/5 text-ink-soft">
       <Icon className="h-3 w-3" /> {label}
     </Badge>
   );
@@ -24,7 +24,7 @@ export function FormatBadge({ format }: { format: CompFormat }) {
 
 export function RegionBadge({ region }: { region: CompRegion }) {
   return (
-    <Badge className="gap-1 bg-electric-50 text-electric-700">
+    <Badge className="gap-1 bg-pen/10 text-pen">
       <Globe className="h-3 w-3" /> {region}
     </Badge>
   );

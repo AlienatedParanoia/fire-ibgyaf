@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Sora } from "next/font/google";
+import { Newsreader, Hanken_Grotesk, Caveat } from "next/font/google";
 import { Toaster } from "sonner";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -7,8 +7,9 @@ import { PageTransition } from "@/components/page-transition";
 import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const sora = Sora({ subsets: ["latin"], variable: "--font-sora", display: "swap" });
+const serif = Newsreader({ subsets: ["latin"], variable: "--font-serif", display: "swap", weight: ["400", "500"], style: ["normal", "italic"] });
+const sans  = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const hand  = Caveat({ subsets: ["latin"], variable: "--font-hand", display: "swap", weight: ["500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "F.I.R.E — Find. Involve. Reach. Engage.",
@@ -21,7 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { profile } = await getCurrentUser();
 
   return (
-    <html lang="en" className={`${inter.variable} ${sora.variable}`}>
+    <html lang="en" className={`${serif.variable} ${sans.variable} ${hand.variable}`}>
       <body className="flex min-h-screen flex-col bg-background">
         <Navbar profile={profile ?? null} />
         <main className="flex-1">
@@ -31,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Toaster
           position="top-right"
           richColors
-          toastOptions={{ style: { fontFamily: "var(--font-inter)" } }}
+          toastOptions={{ style: { fontFamily: "var(--font-sans)" } }}
         />
       </body>
     </html>

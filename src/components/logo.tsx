@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Logo({ className, showText = true }: { className?: string; showText?: boolean }) {
+export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn("group inline-flex items-center gap-2", className)}>
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-fire to-electric shadow-sm">
-        <Flame className="h-5 w-5 text-white" />
+    <Link href="/" className={cn("inline-flex items-baseline gap-2", className)}>
+      <span className="font-heading text-2xl font-medium tracking-wide text-ink">F.I.R.E</span>
+      <span
+        className="font-hand text-[18px] text-ember"
+        style={{ transform: "rotate(-6deg)", display: "inline-block" }}
+      >
+        (beta)
       </span>
-      {showText && (
-        <span className="font-heading text-xl font-bold tracking-tight text-charcoal">
-          F.I.R.E
-        </span>
-      )}
     </Link>
   );
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Check, X, Flame, Inbox } from "lucide-react";
+import { Check, X, Star, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CategoryBadge } from "@/components/competitions/badges";
@@ -35,18 +35,18 @@ export function ApprovalsSection({
     if (error) return toast.error(error.message);
     if (kind === "competition") setComps((l) => l.filter((c) => c.id !== id));
     else setClubList((l) => l.filter((c) => c.id !== id));
-    toast.success(`Approved${featured ? " & featured" : ""} 🎉`);
+    toast.success(`Approved${featured ? " & featured" : ""}`);
   }
 
   async function reject(id: string) {
     const supabase = getSupabaseBrowser();
     if (!supabase) return toast.error("Supabase not configured.");
-    const note = window.prompt("Optional note for rejection (the item will be removed):") ?? undefined;
+    window.prompt("Optional note for rejection (the item will be removed):");
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) return toast.error(error.message);
     if (kind === "competition") setComps((l) => l.filter((c) => c.id !== id));
     else setClubList((l) => l.filter((c) => c.id !== id));
-    toast.success(note ? "Rejected with note" : "Rejected");
+    toast.success("Rejected");
   }
 
   const items = kind === "competition" ? comps : clubList;
@@ -67,23 +67,23 @@ export function ApprovalsSection({
             ? comps.map((c) => (
                 <div
                   key={c.id}
-                  className="flex flex-col gap-3 rounded-xl border border-charcoal/10 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-ink/10 bg-panel p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-charcoal">{c.title}</p>
-                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <p className="font-medium text-ink">{c.title}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
                       <CategoryBadge category={c.category} />
                       {c.organizer} · Deadline {formatDate(c.deadline)}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <Button size="sm" variant="accent" onClick={() => approve(c.id, true)}>
-                      <Flame className="h-4 w-4" /> Approve + Feature
+                    <Button size="sm" variant="sketch" onClick={() => approve(c.id, true)}>
+                      <Star className="h-4 w-4" /> Approve + Feature
                     </Button>
-                    <Button size="sm" onClick={() => approve(c.id, false)}>
+                    <Button size="sm" variant="ember" onClick={() => approve(c.id, false)}>
                       <Check className="h-4 w-4" /> Approve
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => reject(c.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => reject(c.id)}>
                       <X className="h-4 w-4" /> Reject
                     </Button>
                   </div>
@@ -92,20 +92,20 @@ export function ApprovalsSection({
             : clubList.map((c) => (
                 <div
                   key={c.id}
-                  className="flex flex-col gap-3 rounded-xl border border-charcoal/10 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-ink/10 bg-panel p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-charcoal">{c.name}</p>
-                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <p className="font-medium text-ink">{c.name}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
                       <CategoryBadge category={c.category} />
                       {c.contact_person}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <Button size="sm" onClick={() => approve(c.id)}>
+                    <Button size="sm" variant="ember" onClick={() => approve(c.id)}>
                       <Check className="h-4 w-4" /> Approve
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => reject(c.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => reject(c.id)}>
                       <X className="h-4 w-4" /> Reject
                     </Button>
                   </div>

@@ -4,12 +4,10 @@ import type { Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const SAMPLE: Competition[] = [];
-
 async function getData() {
   const supabase = getSupabaseServer();
   const { authUser } = await getCurrentUser();
-  if (!supabase) return { competitions: SAMPLE, savedIds: [] as string[], loggedIn: false };
+  if (!supabase) return { competitions: [] as Competition[], savedIds: [] as string[], loggedIn: false };
 
   const { data: competitions } = await supabase
     .from("competitions")
@@ -38,11 +36,14 @@ export default async function CompetitionsPage() {
   const { competitions, savedIds, loggedIn } = await getData();
   return (
     <div className="container py-10">
-      <header className="mb-8">
-        <h1 className="font-heading text-3xl font-bold text-charcoal sm:text-4xl">Competitions</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Browse {competitions.length} live opportunities. Filter by category, region, format, and
-          deadline to find your next challenge.
+      <header className="mb-8 border-b border-ink/10 pb-6">
+        <p className="mb-2 font-hand text-[20px] text-ember" style={{ transform: "rotate(-1deg)", display: "inline-block" }}>
+          {competitions.length} live opportunities
+        </p>
+        <h1 className="font-heading text-4xl font-medium text-ink">Competitions</h1>
+        <p className="mt-2 max-w-2xl text-[17px] text-ink-soft">
+          Browse every competition open to Singapore students. Filter by category, region,
+          format, and deadline to find your next challenge.
         </p>
       </header>
       <CompetitionsBrowser

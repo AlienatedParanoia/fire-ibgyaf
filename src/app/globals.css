@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 28% 14%;
+  --border: 240 10% 90%;
+  --input: 240 10% 90%;
+  --ring: 18 100% 50%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-charcoal antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Animated brand gradient for hero sections */
+  .fire-gradient {
+    background: linear-gradient(120deg, #ff4d00, #ff7438, #0066ff, #003d99);
+    background-size: 300% 300%;
+    animation: gradient-shift 10s ease infinite;
+  }
+  .fire-text-gradient {
+    @apply bg-gradient-to-r from-fire to-electric bg-clip-text text-transparent;
+  }
+}
+
+/* thin scrollbar for sidebars/tables */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 46, 0.18);
+  border-radius: 9999px;
+}

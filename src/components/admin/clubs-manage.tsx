@@ -100,7 +100,12 @@ export function ClubsManage({ initial }: { initial: Club[] }) {
     if (!supabase) return;
     const next = !c.is_approved;
     setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: next } : x));
-    await supabase.from("clubs").update({ is_approved: next }).eq("id", c.id);
+    const { error } = await supabase.from("clubs").update({ is_approved: next }).eq("id", c.id);
+    if (error) {
+      toast.error(error.message);
+      setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: !next } : x));
+      return;
+    }
     toast.success(next ? "Approved" : "Unapproved");
   }
 

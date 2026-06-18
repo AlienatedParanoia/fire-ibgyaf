@@ -93,19 +93,19 @@ export function CompetitionsBrowser({
     const uid = auth.user?.id;
     if (!uid) { setSavingId(null); toast.error("Please log in again."); return; }
     const already = savedIds.has(comp.id);
-    try {
-      if (already) {
-        await supabase.from("participation").delete().eq("user_id", uid).eq("competition_id", comp.id);
-        setSavedIds((s) => { const n = new Set(s); n.delete(comp.id); return n; });
-        toast.success("Removed from tracker");
-      } else {
-        await supabase.from("participation").insert({ user_id: uid, competition_id: comp.id, status: "interested" });
-        await supabase.from("analytics_events").insert({ event_type: "competition_saved", user_id: uid, reference_id: comp.id });
-        setSavedIds((s) => new Set(s).add(comp.id));
-        toast.success("Saved to your tracker");
-      }
-    } catch { toast.error("Something went wrong."); }
-    finally { setSavingId(null); }
+    if (already) {
+      const { error } = await supabase.from("participation").delete().eq("user_id", uid).eq("competition_id", comp.id);
+      if (error) { toast.error("Failed to remove."); setSavingId(null); return; }
+      setSavedIds((s) => { const n = new Set(s); n.delete(comp.id); return n; });
+      toast.success("Removed from tracker");
+    } else {
+      const { error } = await supabase.from("participation").insert({ user_id: uid, competition_id: comp.id, status: "interested" });
+      if (error) { toast.error("Failed to save."); setSavingId(null); return; }
+      await supabase.from("analytics_events").insert({ event_type: "competition_saved", user_id: uid, reference_id: comp.id });
+      setSavedIds((s) => new Set(s).add(comp.id));
+      toast.success("Saved to your tracker");
+    }
+    setSavingId(null);
   }
 
   function share(comp: Competition) {

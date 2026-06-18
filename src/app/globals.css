@@ -28,6 +28,14 @@
   .text-balance {
     text-wrap: balance;
   }
+  .fire-gradient {
+    background: linear-gradient(120deg, #ff4d00, #ff7438, #0066ff, #003d99);
+    background-size: 300% 300%;
+    animation: gradient-shift 10s ease infinite;
+  }
+  .fire-text-gradient {
+    @apply bg-gradient-to-r from-fire to-electric bg-clip-text text-transparent;
+  }
   .mark {
     background: linear-gradient(
       104deg,
@@ -44,6 +52,11 @@
   }
   .shadow-hard      { box-shadow: 3px 3px 0 #211E18; }
   .shadow-hard-card { box-shadow: 4px 4px 0 rgba(33, 30, 24, 0.1); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 /* paper grain overlay */

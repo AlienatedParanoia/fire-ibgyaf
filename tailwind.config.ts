@@ -26,6 +26,10 @@ const config: Config = {
         ember: { DEFAULT: "#CC5230", deep: "#A83F22" },
         hi: "#FFD25E",
         pen: "#2F6090",
+        /* backward-compat aliases for non-redesigned pages */
+        charcoal: "#211E18",
+        fire: { DEFAULT: "#CC5230", 50: "#FFF5F2", 100: "#FFE8E0", 700: "#A83F22" },
+        electric: { DEFAULT: "#2F6090", 50: "#EEF4FB", 100: "#D9E9F5", 600: "#2F6090", 700: "#255080" },
         primary: { DEFAULT: "#CC5230", foreground: "#FFFFFF" },
         muted: { DEFAULT: "#FBF9F4", foreground: "#5A554A" },
         card: { DEFAULT: "#FBF9F4", foreground: "#211E18" },

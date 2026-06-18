@@ -41,12 +41,13 @@ export function ApprovalsSection({
   async function reject(id: string) {
     const supabase = getSupabaseBrowser();
     if (!supabase) return toast.error("Supabase not configured.");
-    window.prompt("Optional note for rejection (the item will be removed):");
+    const note = window.prompt("Optional note for rejection (the item will be removed):");
+    if (note === null) return;
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) return toast.error(error.message);
     if (kind === "competition") setComps((l) => l.filter((c) => c.id !== id));
     else setClubList((l) => l.filter((c) => c.id !== id));
-    toast.success("Rejected");
+    toast.success(note.trim() ? `Rejected — ${note}` : "Rejected");
   }
 
   const items = kind === "competition" ? comps : clubList;

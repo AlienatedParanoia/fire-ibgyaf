@@ -13,3 +13,14 @@ yarn-error.log*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# design-sync scratch / build artifacts (not part of the app)
+/.ds-sync/
+/ds-bundle/
+/ds-tailwind-compiled.css
+.design-sync/node_modules
+.design-sync/.cache/
+
+# design handoff inputs (already implemented)
+/design_handoff_*/
+*.zip

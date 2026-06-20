@@ -117,7 +117,7 @@ export function CompetitionsBrowser({
   return (
     <div>
       {/* filter bar */}
-      <div className="sticky top-[74px] z-30 -mx-2 mb-6 rounded-xl border border-ink/10 bg-panel/95 p-3 shadow-hard-card backdrop-blur">
+      <div className="sticky top-[84px] z-30 -mx-2 mb-6 rounded-xl border border-ink/10 bg-panel/95 p-3 shadow-hard-card backdrop-blur">
         <div className="flex flex-col gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
@@ -291,8 +291,8 @@ function CompetitionCard({ comp, saved, saving, onSave, onOpen }: {
     <div
       onClick={onOpen}
       className={cn(
-        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-[5px_5px_0_rgba(33,30,24,0.12)]",
-        comp.is_featured ? "border-ember/40 ring-1 ring-ember/15" : "border-ink/12"
+        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-hard-hover",
+        comp.is_featured ? "border-coral/50 ring-1 ring-coral/15" : "border-ink/12"
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-2">

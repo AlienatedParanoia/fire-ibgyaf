@@ -37,10 +37,12 @@ export default async function CompetitionsPage() {
   return (
     <div className="container py-10">
       <header className="mb-8 border-b border-ink/10 pb-6">
-        <p className="mb-2 font-hand text-[20px] text-ember" style={{ transform: "rotate(-1deg)", display: "inline-block" }}>
+        <p className="mb-2 font-hand text-[20px] text-coral" style={{ transform: "rotate(-1deg)", display: "inline-block" }}>
           {competitions.length} live opportunities
         </p>
-        <h1 className="font-heading text-4xl font-medium text-ink">Competitions</h1>
+        <h1 className="font-heading text-4xl font-medium text-ink">
+          Competitions<span className="text-coral">.</span>
+        </h1>
         <p className="mt-2 max-w-2xl text-[17px] text-ink-soft">
           Browse every competition open to Singapore students. Filter by category, region,
           format, and deadline to find your next challenge.

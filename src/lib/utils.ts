@@ -22,11 +22,11 @@ export function deadlineUrgency(date: string | Date | null | undefined): {
   label: string;
 } {
   const d = daysUntil(date);
-  if (d === null) return { color: "text-muted-foreground", label: "No deadline" };
-  if (d < 0) return { color: "text-muted-foreground", label: "Closed" };
-  if (d <= 7) return { color: "text-red-600", label: d === 0 ? "Due today" : `${d}d left` };
-  if (d <= 30) return { color: "text-orange-500", label: `${d}d left` };
-  return { color: "text-electric-600", label: `${d}d left` };
+  if (d === null) return { color: "text-ink-faint", label: "No deadline" };
+  if (d < 0) return { color: "text-ink-faint", label: "Closed" };
+  if (d <= 7) return { color: "text-coral", label: d === 0 ? "Due today" : `${d}d left` };
+  if (d <= 30) return { color: "text-ink", label: `${d}d left` };
+  return { color: "text-ink-faint", label: `${d}d left` };
 }
 
 export function formatDate(date: string | Date | null | undefined): string {

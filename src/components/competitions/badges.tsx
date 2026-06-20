@@ -24,7 +24,7 @@ export function FormatBadge({ format }: { format: CompFormat }) {
 
 export function RegionBadge({ region }: { region: CompRegion }) {
   return (
-    <Badge className="gap-1 bg-pen/10 text-pen">
+    <Badge className="gap-1 bg-ink/5 text-ink-soft">
       <Globe className="h-3 w-3" /> {region}
     </Badge>
   );

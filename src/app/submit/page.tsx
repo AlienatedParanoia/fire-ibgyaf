@@ -66,7 +66,7 @@ export default function SubmitPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md rounded-2xl border border-charcoal/10 bg-white p-8 text-center shadow-sm"
+          className="max-w-md rounded-2xl border border-ink/10 bg-panel p-8 text-center shadow-hard-card"
         >
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
             <CheckCircle2 className="h-8 w-8" />
@@ -98,13 +98,13 @@ export default function SubmitPage() {
   return (
     <div className="container max-w-2xl py-12">
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full bg-fire-50 px-3 py-1 text-sm font-medium text-fire-700">
+        <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full bg-coral/10 px-3 py-1 text-sm font-medium text-coral">
           <Sparkles className="h-4 w-4" /> Community powered
         </div>
-        <h1 className="font-heading text-3xl font-bold text-charcoal sm:text-4xl">
-          Suggest an Opportunity
+        <h1 className="font-heading text-3xl font-medium text-ink sm:text-4xl">
+          Suggest an Opportunity<span className="text-coral">.</span>
         </h1>
-        <p className="mx-auto mt-2 max-w-lg text-muted-foreground">
+        <p className="mx-auto mt-2 max-w-lg text-ink-soft">
           Know a competition or club that should be on F.I.R.E? Submit it below — no account needed.
           Our team reviews every entry.
         </p>
@@ -112,7 +112,7 @@ export default function SubmitPage() {
 
       <form
         onSubmit={onSubmit}
-        className="space-y-5 rounded-2xl border border-charcoal/10 bg-white p-6 shadow-sm sm:p-8"
+        className="space-y-5 rounded-2xl border border-ink/10 bg-panel p-6 shadow-hard-card sm:p-8"
       >
         {/* type toggle */}
         <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
@@ -122,7 +122,7 @@ export default function SubmitPage() {
               type="button"
               onClick={() => setType(t)}
               className={`rounded-lg py-2 text-sm font-medium capitalize transition-colors ${
-                type === t ? "bg-white text-fire shadow-sm" : "text-charcoal/60 hover:text-charcoal"
+                type === t ? "bg-paper text-coral shadow-sm" : "text-ink/60 hover:text-ink"
               }`}
             >
               {t}

@@ -12,7 +12,7 @@ export async function requireUser(allowed?: UserRole[]) {
   // When Supabase isn't configured we can't authenticate — send to login,
   // which shows a setup notice.
   if (!supabase || !authUser) redirect("/login");
-  if (allowed && profile && !allowed.includes(profile.role)) redirect("/dashboard");
+  if (!profile || (allowed && !allowed.includes(profile.role))) redirect("/dashboard");
 
   return { authUser, profile, supabase };
 }

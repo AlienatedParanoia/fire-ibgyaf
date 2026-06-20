@@ -30,7 +30,7 @@ const COLS = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[rgba(33,30,24,0.16)] bg-paper">
+    <footer className="border-t border-[rgba(2,2,2,0.14)] bg-paper">
       <div className="container flex flex-wrap items-start justify-between gap-10 py-14">
         <div>
           <Logo />
@@ -58,7 +58,7 @@ export function Footer() {
           ))}
         </div>
       </div>
-      <div className="border-t border-[rgba(33,30,24,0.09)]">
+      <div className="border-t border-[rgba(2,2,2,0.09)]">
         <div className="container flex flex-wrap items-center justify-between gap-2 py-5 font-hand text-[20px] text-ink-faint">
           <span>made with too much coffee in Singapore · {new Date().getFullYear()}</span>
           <span>non-profit · by students, for students</span>

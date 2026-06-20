@@ -71,8 +71,9 @@ export function TrackerView({
 
   async function removeParticipation(p: Participation) {
     if (!supabase) return;
+    const { error } = await supabase.from("participation").delete().eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
     setParticipation((list) => list.filter((x) => x.id !== p.id));
-    await supabase.from("participation").delete().eq("id", p.id);
     toast.success("Removed from tracker");
   }
 
@@ -248,8 +249,9 @@ function NoteDialog({
     const supabase = getSupabaseBrowser();
     if (!supabase) return;
     setLoading(true);
-    await supabase.from("participation").update({ notes }).eq("id", participation.id);
+    const { error } = await supabase.from("participation").update({ notes }).eq("id", participation.id);
     setLoading(false);
+    if (error) { toast.error(error.message); return; }
     onSaved(participation.id, notes);
     toast.success("Note saved");
     onClose();

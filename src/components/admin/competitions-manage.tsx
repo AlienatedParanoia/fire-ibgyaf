@@ -117,7 +117,12 @@ export function CompetitionsManage({ initial }: { initial: Competition[] }) {
     if (!supabase) return;
     const next = !c.is_approved;
     setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: next } : x));
-    await supabase.from("competitions").update({ is_approved: next }).eq("id", c.id);
+    const { error } = await supabase.from("competitions").update({ is_approved: next }).eq("id", c.id);
+    if (error) {
+      toast.error(error.message);
+      setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: !next } : x));
+      return;
+    }
     toast.success(next ? "Approved" : "Unapproved");
   }
 
@@ -126,7 +131,12 @@ export function CompetitionsManage({ initial }: { initial: Competition[] }) {
     if (!supabase) return;
     const next = !c.is_featured;
     setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_featured: next } : x));
-    await supabase.from("competitions").update({ is_featured: next }).eq("id", c.id);
+    const { error } = await supabase.from("competitions").update({ is_featured: next }).eq("id", c.id);
+    if (error) {
+      toast.error(error.message);
+      setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_featured: !next } : x));
+      return;
+    }
     toast.success(next ? "Featured" : "Unfeatured");
   }
 

@@ -1,16 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn("inline-flex items-baseline gap-2", className)}>
-      <span className="font-heading text-2xl font-medium tracking-wide text-ink">F.I.R.E</span>
-      <span
-        className="font-hand text-[18px] text-ember"
-        style={{ transform: "rotate(-6deg)", display: "inline-block" }}
-      >
-        (beta)
-      </span>
+    <Link href="/" className={cn("inline-flex items-center", className)} aria-label="F.I.R.E home">
+      <Image
+        src="/fire-logo-dark.png"
+        alt="F.I.R.E"
+        width={4073}
+        height={1281}
+        priority
+        className="h-8 w-auto"
+      />
     </Link>
   );
 }

@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --background: 40 33% 93%;   /* #F3EFE6 paper */
-  --foreground: 40 12% 12%;   /* #211E18 ink   */
-  --border: 40 14% 78%;
-  --input: 40 14% 78%;
-  --ring: 12 60% 49%;         /* ember */
+  --background: 48 33% 97%;   /* #FAF9F5 paper */
+  --foreground: 0 0% 1%;      /* #020202 ink   */
+  --border: 40 10% 86%;
+  --input: 40 10% 86%;
+  --ring: 6 91% 63%;          /* coral */
 }
 
 @layer base {
@@ -28,13 +28,22 @@
   .text-balance {
     text-wrap: balance;
   }
+  .fire-gradient {
+    background: linear-gradient(120deg, #F75C4C, #E0402F, #020202);
+    background-size: 300% 300%;
+    animation: gradient-shift 10s ease infinite;
+  }
+  .fire-text-gradient {
+    @apply bg-gradient-to-r from-coral to-coral-deep bg-clip-text text-transparent;
+  }
+  /* coral highlight accent (replaces the old yellow highlighter) */
   .mark {
     background: linear-gradient(
       104deg,
-      rgba(255, 210, 94, 0) 0.3%,
-      rgba(255, 210, 94, 0.92) 2%,
-      rgba(255, 210, 94, 0.82) 96%,
-      rgba(255, 210, 94, 0) 99%
+      rgba(247, 92, 76, 0) 0.3%,
+      rgba(247, 92, 76, 0.2) 2%,
+      rgba(247, 92, 76, 0.16) 96%,
+      rgba(247, 92, 76, 0) 99%
     );
     padding: 0 0.12em;
     margin: 0 -0.04em;
@@ -42,19 +51,27 @@
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
-  .shadow-hard      { box-shadow: 3px 3px 0 #211E18; }
-  .shadow-hard-card { box-shadow: 4px 4px 0 rgba(33, 30, 24, 0.1); }
+  /* masked line-reveal wrapper — extra vertical padding so ascenders/
+     descenders aren't clipped by overflow:hidden */
+  .u-mask { overflow: hidden; padding: 0.16em 0.05em 0.26em; }
+  .shadow-hard       { box-shadow: 3px 3px 0 #020202; }
+  .shadow-hard-card  { box-shadow: 4px 4px 0 rgba(2, 2, 2, 0.07); }
+  .shadow-hard-hover { box-shadow: 6px 6px 0 rgba(2, 2, 2, 0.1); }
+  .shadow-hard-modal { box-shadow: 10px 10px 0 rgba(2, 2, 2, 0.12); }
+  /* left-origin coral underline that grows on hover */
+  .link-underline {
+    background-image: linear-gradient(#F75C4C, #F75C4C);
+    background-size: 0% 1.5px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.4s cubic-bezier(0.16, 0.84, 0.44, 1);
+  }
+  .link-underline:hover { background-size: 100% 1.5px; }
 }
 
-/* paper grain overlay */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }

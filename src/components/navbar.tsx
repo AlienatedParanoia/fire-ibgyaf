@@ -29,6 +29,7 @@ const NAV_LINKS = [
   { href: "/submit", label: "Submit" },
   { href: "/tracker", label: "Tracker" },
   { href: "/portfolio", label: "Portfolio" },
+  { href: "/profiles", label: "Profiles" },
   { href: "/calendar", label: "Calendar" },
 ];
 
@@ -62,7 +63,7 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[rgba(33,30,24,0.09)] bg-[rgba(243,239,230,0.85)] backdrop-blur-[8px]">
+    <header className="sticky top-0 z-50 border-b border-[rgba(2,2,2,0.1)] bg-[rgba(250,249,245,0.85)] backdrop-blur-[8px]">
       <nav className="container flex h-[74px] items-center justify-between gap-4">
         <Logo />
 
@@ -74,7 +75,9 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
               href={l.href}
               className={cn(
                 "relative rounded-lg px-3 py-2 text-[15.5px] transition-colors",
-                isActive(l.href) ? "text-ember" : "text-ink-soft hover:text-ink"
+                isActive(l.href)
+                  ? "text-coral"
+                  : "link-underline text-ink-soft hover:text-ink"
               )}
             >
               {l.label}

@@ -1,0 +1,20 @@
+{
+  "projectId": "9adb8bb1-3018-4d95-a5f4-ec33b21b0d26",
+  "pkg": "fire-platform",
+  "globalName": "FIRE",
+  "shape": "package",
+  "srcDir": "src/components",
+  "tsconfig": "./tsconfig.json",
+  "cssEntry": "./ds-tailwind-compiled.css",
+  "runtimeFontPrefixes": ["Newsreader", "Hanken Grotesk", "Caveat"],
+  "componentSrcMap": {
+    "Navbar": null,
+    "MenuItem": null,
+    "Dialog": null,
+    "RevealSection": null,
+    "PageTransition": null
+  },
+  "libOverrides": {
+    "bundle.mjs": "add process shim banner so Next.js + Supabase don't throw ReferenceError: process is not defined in browser preview"
+  }
+}

@@ -93,19 +93,19 @@ export function CompetitionsBrowser({
     const uid = auth.user?.id;
     if (!uid) { setSavingId(null); toast.error("Please log in again."); return; }
     const already = savedIds.has(comp.id);
-    try {
-      if (already) {
-        await supabase.from("participation").delete().eq("user_id", uid).eq("competition_id", comp.id);
-        setSavedIds((s) => { const n = new Set(s); n.delete(comp.id); return n; });
-        toast.success("Removed from tracker");
-      } else {
-        await supabase.from("participation").insert({ user_id: uid, competition_id: comp.id, status: "interested" });
-        await supabase.from("analytics_events").insert({ event_type: "competition_saved", user_id: uid, reference_id: comp.id });
-        setSavedIds((s) => new Set(s).add(comp.id));
-        toast.success("Saved to your tracker");
-      }
-    } catch { toast.error("Something went wrong."); }
-    finally { setSavingId(null); }
+    if (already) {
+      const { error } = await supabase.from("participation").delete().eq("user_id", uid).eq("competition_id", comp.id);
+      if (error) { toast.error("Failed to remove."); setSavingId(null); return; }
+      setSavedIds((s) => { const n = new Set(s); n.delete(comp.id); return n; });
+      toast.success("Removed from tracker");
+    } else {
+      const { error } = await supabase.from("participation").insert({ user_id: uid, competition_id: comp.id, status: "interested" });
+      if (error) { toast.error("Failed to save."); setSavingId(null); return; }
+      await supabase.from("analytics_events").insert({ event_type: "competition_saved", user_id: uid, reference_id: comp.id });
+      setSavedIds((s) => new Set(s).add(comp.id));
+      toast.success("Saved to your tracker");
+    }
+    setSavingId(null);
   }
 
   function share(comp: Competition) {
@@ -117,7 +117,7 @@ export function CompetitionsBrowser({
   return (
     <div>
       {/* filter bar */}
-      <div className="sticky top-[74px] z-30 -mx-2 mb-6 rounded-xl border border-ink/10 bg-panel/95 p-3 shadow-hard-card backdrop-blur">
+      <div className="sticky top-[84px] z-30 -mx-2 mb-6 rounded-xl border border-ink/10 bg-panel/95 p-3 shadow-hard-card backdrop-blur">
         <div className="flex flex-col gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
@@ -291,8 +291,8 @@ function CompetitionCard({ comp, saved, saving, onSave, onOpen }: {
     <div
       onClick={onOpen}
       className={cn(
-        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-[5px_5px_0_rgba(33,30,24,0.12)]",
-        comp.is_featured ? "border-ember/40 ring-1 ring-ember/15" : "border-ink/12"
+        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-hard-hover",
+        comp.is_featured ? "border-coral/50 ring-1 ring-coral/15" : "border-ink/12"
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-2">

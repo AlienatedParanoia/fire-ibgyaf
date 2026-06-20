@@ -35,17 +35,23 @@ export function Countdown({ deadline, className }: { deadline: string | null; cl
 
   return (
     <div className={cn("flex gap-2", className)}>
-      {units.map((u) => (
-        <div
-          key={u.label}
-          className="flex min-w-[3.25rem] flex-col items-center rounded-lg bg-charcoal px-2 py-1.5 text-white"
-        >
-          <span className="font-heading text-lg font-bold tabular-nums leading-none">
-            {String(u.value).padStart(2, "0")}
-          </span>
-          <span className="mt-0.5 text-[10px] uppercase tracking-wide text-white/60">{u.label}</span>
-        </div>
-      ))}
+      {units.map((u, i) => {
+        const isSeconds = i === units.length - 1;
+        return (
+          <div
+            key={u.label}
+            className={cn(
+              "flex min-w-[3.25rem] flex-col items-center rounded-lg px-2 py-1.5 text-white",
+              isSeconds ? "bg-coral" : "bg-ink"
+            )}
+          >
+            <span className="font-heading text-lg font-bold tabular-nums leading-none">
+              {String(u.value).padStart(2, "0")}
+            </span>
+            <span className="mt-0.5 text-[10px] uppercase tracking-wide text-white/60">{u.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

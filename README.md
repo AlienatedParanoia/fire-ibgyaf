@@ -1,4 +1,4 @@
-# 🔥 F.I.R.E — Find. Involve. Reach. Engage.
+# F.I.R.E — Find. Involve. Reach. Engage.
 
 > Your gateway to every opportunity.
 
@@ -10,7 +10,7 @@ Built with **Next.js 14 (App Router)**, **Supabase** (auth + Postgres + realtime
 
 ---
 
-## ✨ Features
+## Features
 
 - **Public landing page** — animated gradient hero, live stat counters, feature highlights, testimonials.
 - **Auth** — email/password sign up & login via Supabase Auth (collects name, school, grade).
@@ -27,7 +27,7 @@ Built with **Next.js 14 (App Router)**, **Supabase** (auth + Postgres + realtime
 
 ---
 
-## 🧱 Project structure
+## Project structure
 
 ```
 src/
@@ -53,20 +53,4 @@ supabase/                # schema.sql + seed.sql
 scripts/seed.mjs         # demo-account seeder
 ```
 
----
-
-## ☁️ Deploy
-
-Deploys cleanly to **Vercel**. Add the three environment variables in the Vercel
-project settings, then push. Run `schema.sql` + `seed.sql` against your production
-Supabase project once.
-
----
-
-## 🎯 Design notes
-
-- **Palette:** deep orange `#FF4D00` (primary), electric blue `#0066FF` (accent), charcoal `#1A1A2E` (text), white surfaces.
-- **Type:** Inter (body) + Sora (headings), via `next/font`.
-- **Graceful degradation:** every Supabase call is null-safe, so the UI still renders (in demo mode) before you wire up your keys.
-
-Built by students, for students. 🔥
+Built by students, for students. 

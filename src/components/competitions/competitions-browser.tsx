@@ -14,6 +14,7 @@ import {
   Share2,
   SearchX,
   Star,
+  Pencil,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Countdown } from "@/components/countdown";
 import { CategoryBadge, FormatBadge, RegionBadge } from "./badges";
+import { CompetitionFormDialog } from "./competition-form-dialog";
 import { CATEGORIES, cn, daysUntil, deadlineUrgency, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { Competition } from "@/lib/types";
@@ -31,11 +33,14 @@ export function CompetitionsBrowser({
   initialCompetitions,
   initialSavedIds,
   loggedIn,
+  isAdmin = false,
 }: {
   initialCompetitions: Competition[];
   initialSavedIds: string[];
   loggedIn: boolean;
+  isAdmin?: boolean;
 }) {
+  const [competitions, setCompetitions] = React.useState<Competition[]>(initialCompetitions);
   const [query, setQuery] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [region, setRegion] = React.useState("");
@@ -44,10 +49,11 @@ export function CompetitionsBrowser({
   const [sort, setSort] = React.useState<SortKey>("deadline");
   const [savedIds, setSavedIds] = React.useState<Set<string>>(new Set(initialSavedIds));
   const [active, setActive] = React.useState<Competition | null>(null);
+  const [editing, setEditing] = React.useState<Competition | null>(null);
   const [savingId, setSavingId] = React.useState<string | null>(null);
 
   const filtered = React.useMemo(() => {
-    let list = initialCompetitions.filter((c) => {
+    let list = competitions.filter((c) => {
       if (query) {
         const q = query.toLowerCase();
         const hay = `${c.title} ${c.organizer ?? ""} ${c.description ?? ""}`.toLowerCase();
@@ -76,7 +82,7 @@ export function CompetitionsBrowser({
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return list;
-  }, [initialCompetitions, query, category, region, format, deadline, sort]);
+  }, [competitions, query, category, region, format, deadline, sort]);
 
   async function toggleSave(comp: Competition, e?: React.MouseEvent) {
     e?.stopPropagation();
@@ -197,7 +203,16 @@ export function CompetitionsBrowser({
       <Dialog open={!!active} onClose={() => setActive(null)} className="max-w-3xl">
         {active && (
           <div>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => setEditing(active)}
+                aria-label="Edit competition"
+                className="absolute left-4 top-4 z-10 rounded-md p-1.5 text-ink-faint transition-colors hover:bg-paper hover:text-ember"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            <div className={cn("mb-3 flex flex-wrap items-center gap-2", isAdmin && "pl-9")}>
               {active.is_featured && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-ember px-2.5 py-0.5 text-xs font-semibold text-white">
                   <Star className="h-3 w-3" /> Featured
@@ -264,6 +279,19 @@ export function CompetitionsBrowser({
           </div>
         )}
       </Dialog>
+
+      {isAdmin && (
+        <CompetitionFormDialog
+          open={!!editing}
+          competition={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(c) => {
+            setCompetitions((list) => list.map((x) => (x.id === c.id ? c : x)));
+            setActive((a) => (a && a.id === c.id ? c : a));
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

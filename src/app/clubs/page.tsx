@@ -1,4 +1,4 @@
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServer, getCurrentUser } from "@/lib/supabase/server";
 import { ClubsGrid } from "@/components/clubs/clubs-grid";
 import type { Club, Competition } from "@/lib/types";
 
@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 
 async function getData() {
   const supabase = getSupabaseServer();
-  if (!supabase) return { clubs: [] as Club[], compsByClub: {} as Record<string, Competition[]> };
+  const { profile } = await getCurrentUser();
+  if (!supabase) return { clubs: [] as Club[], compsByClub: {} as Record<string, Competition[]>, isAdmin: false };
 
   const { data: clubs } = await supabase
     .from("clubs")
@@ -32,11 +33,11 @@ async function getData() {
     }
   }
 
-  return { clubs: clubList, compsByClub };
+  return { clubs: clubList, compsByClub, isAdmin: profile?.role === "admin" };
 }
 
 export default async function ClubsPage() {
-  const { clubs, compsByClub } = await getData();
+  const { clubs, compsByClub, isAdmin } = await getData();
   return (
     <div className="container py-10">
       <header className="mb-8">
@@ -54,7 +55,7 @@ export default async function ClubsPage() {
           compete in, and join in a tap.
         </p>
       </header>
-      <ClubsGrid clubs={clubs} compsByClub={compsByClub} />
+      <ClubsGrid clubs={clubs} compsByClub={compsByClub} isAdmin={isAdmin} />
     </div>
   );
 }

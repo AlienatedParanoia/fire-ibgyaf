@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 async function getData() {
   const supabase = getSupabaseServer();
-  const { authUser } = await getCurrentUser();
-  if (!supabase) return { competitions: [] as Competition[], savedIds: [] as string[], loggedIn: false };
+  const { authUser, profile } = await getCurrentUser();
+  if (!supabase) return { competitions: [] as Competition[], savedIds: [] as string[], loggedIn: false, isAdmin: false };
 
   const { data: competitions } = await supabase
     .from("competitions")
@@ -29,11 +29,12 @@ async function getData() {
     competitions: (competitions ?? []) as Competition[],
     savedIds,
     loggedIn: !!authUser,
+    isAdmin: profile?.role === "admin",
   };
 }
 
 export default async function CompetitionsPage() {
-  const { competitions, savedIds, loggedIn } = await getData();
+  const { competitions, savedIds, loggedIn, isAdmin } = await getData();
   return (
     <div className="container py-10">
       <header className="mb-8 border-b border-ink/10 pb-6">
@@ -52,6 +53,7 @@ export default async function CompetitionsPage() {
         initialCompetitions={competitions}
         initialSavedIds={savedIds}
         loggedIn={loggedIn}
+        isAdmin={isAdmin}
       />
     </div>
   );

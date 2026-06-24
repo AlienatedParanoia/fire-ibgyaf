@@ -3,23 +3,28 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Calendar, Mail, User, X, Clock, Users as UsersIcon } from "lucide-react";
+import { Users, Calendar, Mail, User, X, Clock, Pencil, Users as UsersIcon } from "lucide-react";
 import { Select } from "@/components/ui/input";
 import { JoinClubButton } from "./join-club-button";
+import { ClubFormDialog } from "./club-form-dialog";
 import { CATEGORIES, cn, deadlineUrgency } from "@/lib/utils";
 import type { Club, Competition } from "@/lib/types";
 
 const BANNER_GRADIENT = "linear-gradient(135deg, #F75C4C 0%, #E0402F 70%, #020202 240%)";
 
 export function ClubsGrid({
-  clubs,
+  clubs: initialClubs,
   compsByClub = {},
+  isAdmin = false,
 }: {
   clubs: Club[];
   compsByClub?: Record<string, Competition[]>;
+  isAdmin?: boolean;
 }) {
+  const [clubs, setClubs] = React.useState<Club[]>(initialClubs);
   const [category, setCategory] = React.useState("");
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [editing, setEditing] = React.useState<Club | null>(null);
 
   const filtered = category ? clubs.filter((c) => c.category === category) : clubs;
   const active = clubs.find((c) => c.id === activeId) ?? null;
@@ -88,9 +93,23 @@ export function ClubsGrid({
             club={active}
             comps={compsByClub[active.id] ?? []}
             onClose={() => setActiveId(null)}
+            isAdmin={isAdmin}
+            onEdit={() => setEditing(active)}
           />
         )}
       </AnimatePresence>
+
+      {isAdmin && (
+        <ClubFormDialog
+          open={!!editing}
+          club={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(c) => {
+            setClubs((list) => list.map((x) => (x.id === c.id ? c : x)));
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -172,7 +191,19 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
   );
 }
 
-function ClubModal({ club, comps, onClose }: { club: Club; comps: Competition[]; onClose: () => void }) {
+function ClubModal({
+  club,
+  comps,
+  onClose,
+  isAdmin,
+  onEdit,
+}: {
+  club: Club;
+  comps: Competition[];
+  onClose: () => void;
+  isAdmin: boolean;
+  onEdit: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -195,6 +226,16 @@ function ClubModal({ club, comps, onClose }: { club: Club; comps: Competition[];
           <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: "20px 20px 0 0" }}>
             <Banner club={club} height={120} />
           </div>
+          {isAdmin && (
+            <button
+              onClick={onEdit}
+              aria-label="Edit club"
+              className="absolute left-4 top-4 z-[2] flex rounded-[9px] p-2 text-paper"
+              style={{ background: "rgba(2,2,2,0.35)" }}
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
           <button
             onClick={onClose}
             aria-label="Close"

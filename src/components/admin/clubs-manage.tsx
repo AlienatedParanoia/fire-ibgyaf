@@ -4,29 +4,13 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Select, Textarea, Label } from "@/components/ui/input";
-import { Dialog } from "@/components/ui/dialog";
+import { Input, Select } from "@/components/ui/input";
 import { CategoryBadge } from "@/components/competitions/badges";
-import { CATEGORIES, cn } from "@/lib/utils";
+import { ClubFormDialog } from "@/components/clubs/club-form-dialog";
+import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SectionHeading } from "./users-section";
 import type { Club } from "@/lib/types";
-
-type FormState = {
-  name: string;
-  category: string;
-  description: string;
-  meeting_schedule: string;
-  contact_email: string;
-  contact_person: string;
-  is_approved: boolean;
-};
-
-const EMPTY: FormState = {
-  name: "", category: "", description: "",
-  meeting_schedule: "", contact_email: "", contact_person: "",
-  is_approved: true,
-};
 
 export function ClubsManage({ initial }: { initial: Club[] }) {
   const [items, setItems] = React.useState(initial);
@@ -34,8 +18,6 @@ export function ClubsManage({ initial }: { initial: Club[] }) {
   const [statusFilter, setStatusFilter] = React.useState("");
   const [editing, setEditing] = React.useState<Club | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [form, setForm] = React.useState<FormState>(EMPTY);
-  const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState<string | null>(null);
 
   const filtered = items.filter((c) => {
@@ -46,53 +28,19 @@ export function ClubsManage({ initial }: { initial: Club[] }) {
   });
 
   function openAdd() {
-    setForm(EMPTY);
     setEditing(null);
     setDialogOpen(true);
   }
 
   function openEdit(c: Club) {
-    setForm({
-      name: c.name, category: c.category ?? "",
-      description: c.description ?? "",
-      meeting_schedule: c.meeting_schedule ?? "",
-      contact_email: c.contact_email ?? "",
-      contact_person: c.contact_person ?? "",
-      is_approved: c.is_approved,
-    });
     setEditing(c);
     setDialogOpen(true);
   }
 
   function closeDialog() { setDialogOpen(false); setEditing(null); }
 
-  async function save() {
-    if (!form.name.trim()) return toast.error("Club name is required.");
-    const supabase = getSupabaseBrowser();
-    if (!supabase) return toast.error("Supabase not configured.");
-    setSaving(true);
-    const payload = {
-      name: form.name.trim(),
-      category: form.category || null,
-      description: form.description || null,
-      meeting_schedule: form.meeting_schedule || null,
-      contact_email: form.contact_email || null,
-      contact_person: form.contact_person || null,
-      is_approved: form.is_approved,
-    };
-    if (editing) {
-      const { error } = await supabase.from("clubs").update(payload).eq("id", editing.id);
-      if (error) { toast.error(error.message); setSaving(false); return; }
-      setItems((l) => l.map((c) => c.id === editing.id ? { ...c, ...payload } : c));
-      toast.success("Club updated");
-    } else {
-      const { data, error } = await supabase.from("clubs").insert({ ...payload, member_count: 0 }).select().single();
-      if (error) { toast.error(error.message); setSaving(false); return; }
-      setItems((l) => [data as Club, ...l]);
-      toast.success("Club created");
-    }
-    setSaving(false);
-    closeDialog();
+  function onSaved(c: Club) {
+    setItems((l) => (l.some((x) => x.id === c.id) ? l.map((x) => (x.id === c.id ? c : x)) : [c, ...l]));
   }
 
   async function toggleApprove(c: Club) {
@@ -120,10 +68,6 @@ export function ClubsManage({ initial }: { initial: Club[] }) {
     toast.success("Deleted");
     setDeleting(null);
   }
-
-  const set = (k: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
     <div>
@@ -209,58 +153,12 @@ export function ClubsManage({ initial }: { initial: Club[] }) {
         </div>
       </div>
 
-      <Dialog
+      <ClubFormDialog
         open={dialogOpen}
+        club={editing}
         onClose={closeDialog}
-        title={editing ? "Edit Club" : "Add Club"}
-        className="max-w-xl"
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <Label>Club Name *</Label>
-            <Input value={form.name} onChange={set("name")} placeholder="Club name" />
-          </div>
-          <div>
-            <Label>Category</Label>
-            <Select value={form.category} onChange={set("category")}>
-              <option value="">Select category</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </Select>
-          </div>
-          <div>
-            <Label>Meeting Schedule</Label>
-            <Input value={form.meeting_schedule} onChange={set("meeting_schedule")} placeholder="e.g. Wednesdays 3–5pm" />
-          </div>
-          <div>
-            <Label>Contact Person</Label>
-            <Input value={form.contact_person} onChange={set("contact_person")} placeholder="Teacher / leader name" />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input type="email" value={form.contact_email} onChange={set("contact_email")} placeholder="email@school.edu.sg" />
-          </div>
-          <div className="sm:col-span-2">
-            <Label>Description</Label>
-            <Textarea value={form.description} onChange={set("description")} placeholder="What does this club do?" />
-          </div>
-          <label className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.is_approved}
-              onChange={(e) => setForm((f) => ({ ...f, is_approved: e.target.checked }))}
-              className="h-4 w-4 accent-ember"
-            />
-            <span className="text-sm font-medium text-ink">Approved (visible to students)</span>
-          </label>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="sketch" onClick={closeDialog}>Cancel</Button>
-          <Button variant="ember" onClick={save} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {editing ? "Save Changes" : "Create Club"}
-          </Button>
-        </div>
-      </Dialog>
+        onSaved={onSaved}
+      />
     </div>
   );
 }

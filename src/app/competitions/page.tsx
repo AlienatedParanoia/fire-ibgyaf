@@ -7,7 +7,15 @@ export const dynamic = "force-dynamic";
 async function getData() {
   const supabase = getSupabaseServer();
   const { authUser, profile } = await getCurrentUser();
-  if (!supabase) return { competitions: [] as Competition[], savedIds: [] as string[], loggedIn: false, isAdmin: false };
+  if (!supabase)
+    return {
+      competitions: [] as Competition[],
+      savedIds: [] as string[],
+      loggedIn: false,
+      isAdmin: false,
+      interests: [] as string[],
+      historyCategories: [] as string[],
+    };
 
   const { data: competitions } = await supabase
     .from("competitions")
@@ -17,12 +25,26 @@ async function getData() {
     .order("deadline", { ascending: true });
 
   let savedIds: string[] = [];
+  let historyCategories: string[] = [];
   if (authUser) {
     const { data: saved } = await supabase
       .from("participation")
-      .select("competition_id")
+      .select("competition_id, competitions(category)")
       .eq("user_id", authUser.id);
     savedIds = (saved ?? []).map((s) => s.competition_id).filter(Boolean) as string[];
+    historyCategories = Array.from(
+      new Set(
+        (saved ?? [])
+          .map((s) => {
+            // Supabase types the nested relation as an array; at runtime a
+            // to-one join is an object — handle both shapes.
+            const rel = s.competitions as unknown;
+            const comp = Array.isArray(rel) ? rel[0] : rel;
+            return (comp as { category: string | null } | null)?.category ?? null;
+          })
+          .filter(Boolean) as string[]
+      )
+    );
   }
 
   return {
@@ -30,11 +52,13 @@ async function getData() {
     savedIds,
     loggedIn: !!authUser,
     isAdmin: profile?.role === "admin",
+    interests: (profile?.interests ?? []) as string[],
+    historyCategories,
   };
 }
 
 export default async function CompetitionsPage() {
-  const { competitions, savedIds, loggedIn, isAdmin } = await getData();
+  const { competitions, savedIds, loggedIn, isAdmin, interests, historyCategories } = await getData();
   return (
     <div className="container py-10">
       <header className="mb-8 border-b border-ink/10 pb-6">
@@ -54,6 +78,8 @@ export default async function CompetitionsPage() {
         initialSavedIds={savedIds}
         loggedIn={loggedIn}
         isAdmin={isAdmin}
+        interests={interests}
+        historyCategories={historyCategories}
       />
     </div>
   );

@@ -13,6 +13,7 @@ import {
 import { requireUser } from "@/lib/auth";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InterestsPrompt } from "@/components/interests-prompt";
 import { deadlineUrgency, formatDate, cn } from "@/lib/utils";
 import type { Competition, Participation, CustomActivity } from "@/lib/types";
 
@@ -104,6 +105,8 @@ export default async function DashboardPage() {
           <Flame className="h-4 w-4" /> Find opportunities
         </Link>
       </header>
+
+      <InterestsPrompt initialInterests={profile?.interests ?? []} />
 
       {/* summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

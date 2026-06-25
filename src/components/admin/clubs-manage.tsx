@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { ClubFormDialog } from "@/components/clubs/club-form-dialog";
+import { ClubMembersDialog } from "./club-members-panel";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SectionHeading } from "./users-section";
@@ -18,6 +19,7 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
   const [statusFilter, setStatusFilter] = React.useState("");
   const [editing, setEditing] = React.useState<Club | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [membersFor, setMembersFor] = React.useState<Club | null>(null);
   const [deleting, setDeleting] = React.useState<string | null>(null);
 
   const filtered = items.filter((c) => {
@@ -130,6 +132,9 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => setMembersFor(c)} aria-label="Manage members">
+                        <Users className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(c)} aria-label="Edit">
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -159,6 +164,13 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
         onClose={closeDialog}
         onSaved={onSaved}
         users={users}
+      />
+
+      <ClubMembersDialog
+        open={!!membersFor}
+        club={membersFor}
+        users={users}
+        onClose={() => setMembersFor(null)}
       />
     </div>
   );

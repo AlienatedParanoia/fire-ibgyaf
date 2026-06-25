@@ -10,9 +10,9 @@ import { ClubFormDialog } from "@/components/clubs/club-form-dialog";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SectionHeading } from "./users-section";
-import type { Club } from "@/lib/types";
+import type { AppUser, Club } from "@/lib/types";
 
-export function ClubsManage({ initial }: { initial: Club[] }) {
+export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: AppUser[] }) {
   const [items, setItems] = React.useState(initial);
   const [q, setQ] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
@@ -158,6 +158,7 @@ export function ClubsManage({ initial }: { initial: Club[] }) {
         club={editing}
         onClose={closeDialog}
         onSaved={onSaved}
+        users={users}
       />
     </div>
   );

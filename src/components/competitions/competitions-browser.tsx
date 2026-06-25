@@ -285,6 +285,12 @@ export function CompetitionsBrowser({
                 <Pencil className="h-4 w-4" />
               </button>
             )}
+            {active.banner_url && (
+              <div className="mb-4 overflow-hidden rounded-xl border border-ink/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={active.banner_url} alt="" className="h-40 w-full object-cover sm:h-48" />
+              </div>
+            )}
             <div className={cn("mb-3 flex flex-wrap items-center gap-2", isAdmin && "pl-9")}>
               {active.is_featured && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-ember px-2.5 py-0.5 text-xs font-semibold text-white">

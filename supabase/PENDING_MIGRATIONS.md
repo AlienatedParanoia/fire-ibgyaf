@@ -40,6 +40,18 @@ browser's native print-to-PDF. Nothing to run.
 
 ---
 
-<!-- Future phases will be appended below as they're built:
-## ⬜ Phase 4 — Reminders + notifications
--->
+## ⬜ Phase 4 — Reminders + notification center
+Run the **Phase 4** block from `supabase/migration-features.sql`, which creates:
+
+- `users.email_reminders` boolean column (default true)
+- `notifications` table + index + RLS (read/update own)
+- `reminders_sent` dedup table (RLS on, service-role only)
+
+**Also required (not SQL) — set these in Vercel → Project → Settings → Environment Variables:**
+- `SUPABASE_SERVICE_ROLE_KEY` — service-role key (Supabase → Settings → API)
+- `RESEND_API_KEY` — from resend.com (emails are skipped if unset; in-app notifications still work)
+- `CRON_SECRET` — any long random string; the cron route requires it
+- `REMINDER_FROM_EMAIL` — e.g. `F.I.R.E <reminders@yourdomain>` (optional; falls back to Resend's test sender)
+- `NEXT_PUBLIC_SITE_URL` — e.g. `https://fire-ibgyaf.vercel.app` (used in email links)
+
+The daily cron is configured in `vercel.json` (`/api/cron/reminders`).

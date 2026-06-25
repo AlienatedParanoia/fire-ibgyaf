@@ -84,3 +84,52 @@ as $$
 $$;
 
 grant execute on function public.competition_teammates(uuid) to authenticated;
+
+-- ============================================================================
+-- Phase 4 — Deadline reminders + notification center
+--   • per-user email reminder preference
+--   • in-app notifications (owner-readable; inserted by the service-role cron)
+--   • reminders_sent dedup ledger (service-role only)
+-- ============================================================================
+
+-- Per-user toggle for deadline reminder emails.
+alter table public.users add column if not exists email_reminders boolean not null default true;
+
+-- In-app notifications.
+create table if not exists public.notifications (
+  id         uuid primary key default uuid_generate_v4(),
+  user_id    uuid not null references public.users(id) on delete cascade,
+  type       text not null default 'info',
+  title      text not null,
+  body       text,
+  link       text,
+  read       boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists notifications_user_idx
+  on public.notifications (user_id, created_at desc);
+
+alter table public.notifications enable row level security;
+
+-- Students read and mark-read their own notifications. Inserts come from the
+-- service-role cron job (which bypasses RLS), so there is no insert policy.
+drop policy if exists "notifications read own" on public.notifications;
+create policy "notifications read own" on public.notifications
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists "notifications update own" on public.notifications;
+create policy "notifications update own" on public.notifications
+  for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Dedup ledger so a given (participation, lead-time) reminder is sent once.
+-- Touched only by the service-role cron — RLS on with no policies locks it down.
+create table if not exists public.reminders_sent (
+  id               uuid primary key default uuid_generate_v4(),
+  participation_id uuid not null references public.participation(id) on delete cascade,
+  days_before      int not null,
+  sent_at          timestamptz not null default now(),
+  unique (participation_id, days_before)
+);
+
+alter table public.reminders_sent enable row level security;

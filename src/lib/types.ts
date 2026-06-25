@@ -16,6 +16,18 @@ export interface AppUser {
   avatar_url: string | null;
   is_portfolio_public: boolean;
   interests: string[];
+  email_reminders: boolean;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
   created_at: string;
 }
 

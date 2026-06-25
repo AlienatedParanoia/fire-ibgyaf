@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Button, buttonVariants } from "./ui/button";
+import { NotificationsBell } from "./notifications-bell";
 import { cn, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { AppUser } from "@/lib/types";
@@ -93,6 +94,11 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
 
         {/* right side */}
         <div className="flex items-center gap-2">
+          {profile && (
+            <div className="hidden md:block">
+              <NotificationsBell userId={profile.id} emailReminders={profile.email_reminders ?? true} />
+            </div>
+          )}
           {profile ? (
             <div className="relative hidden md:block" ref={menuRef}>
               <button

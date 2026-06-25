@@ -20,6 +20,15 @@ export interface AppUser {
   created_at: string;
 }
 
+export interface SiteSettings {
+  id: number;
+  site_name: string;
+  tagline: string;
+  contact_email: string | null;
+  allow_submissions: boolean;
+  updated_at: string;
+}
+
 export interface Notification {
   id: string;
   user_id: string;

@@ -77,3 +77,8 @@ removed. Run the **PR 2** block from `supabase/migration-admin.sql`.
 ## ⬜ Admin PR 3 — Participation admin + notification composer
 Adds a `notifications admin insert` policy so admins can send in-app notifications to any
 user (compose / broadcast). Run the **PR 3** block from `supabase/migration-admin.sql`.
+
+## ⬜ Admin PR 4 — Persistent platform settings
+Creates the `site_settings` single-row table (site_name, tagline, contact_email,
+allow_submissions) + RLS (public read, admin update). The `/submit` page reads
+`allow_submissions` to gate the form. Run the **PR 4** block from `supabase/migration-admin.sql`.

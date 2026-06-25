@@ -85,3 +85,30 @@ create trigger participation_member_count
 drop policy if exists "notifications admin insert" on public.notifications;
 create policy "notifications admin insert" on public.notifications
   for insert to authenticated with check (public.is_admin());
+
+-- ============================================================================
+-- PR 4 — Persistent platform settings
+--   • single-row settings table (replaces the localStorage stub)
+-- ============================================================================
+
+create table if not exists public.site_settings (
+  id                int primary key default 1 check (id = 1),
+  site_name         text not null default 'F.I.R.E',
+  tagline           text not null default 'Your gateway to every opportunity',
+  contact_email     text,
+  allow_submissions boolean not null default true,
+  updated_at        timestamptz not null default now()
+);
+
+insert into public.site_settings (id) values (1) on conflict (id) do nothing;
+
+alter table public.site_settings enable row level security;
+
+-- Anyone can read settings (e.g. the /submit gate); only admins can change them.
+drop policy if exists "settings public read" on public.site_settings;
+create policy "settings public read" on public.site_settings
+  for select using (true);
+
+drop policy if exists "settings admin update" on public.site_settings;
+create policy "settings admin update" on public.site_settings
+  for update using (public.is_admin()) with check (public.is_admin());

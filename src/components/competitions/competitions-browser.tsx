@@ -15,6 +15,8 @@ import {
   SearchX,
   Star,
   Pencil,
+  Sparkles,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -23,36 +25,59 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Countdown } from "@/components/countdown";
 import { CategoryBadge, FormatBadge, RegionBadge } from "./badges";
 import { CompetitionFormDialog } from "./competition-form-dialog";
+import { InterestsDialog } from "@/components/interests-dialog";
 import { CATEGORIES, cn, daysUntil, deadlineUrgency, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { Competition } from "@/lib/types";
 
-type SortKey = "deadline" | "newest" | "saved";
+type SortKey = "foryou" | "deadline" | "newest" | "saved";
+
+/** Rank a competition for the personalised feed — higher is more relevant. */
+function forYouScore(c: Competition, interests: Set<string>, history: Set<string>): number {
+  let s = 0;
+  if (c.category && interests.has(c.category)) s += 100;
+  if (c.category && history.has(c.category)) s += 40;
+  if (c.is_featured) s += 20;
+  const d = daysUntil(c.deadline);
+  if (d !== null && d >= 0) s += Math.max(0, 30 - d); // sooner deadlines rank higher
+  return s;
+}
 
 export function CompetitionsBrowser({
   initialCompetitions,
   initialSavedIds,
   loggedIn,
   isAdmin = false,
+  interests = [],
+  historyCategories = [],
 }: {
   initialCompetitions: Competition[];
   initialSavedIds: string[];
   loggedIn: boolean;
   isAdmin?: boolean;
+  interests?: string[];
+  historyCategories?: string[];
 }) {
   const [competitions, setCompetitions] = React.useState<Competition[]>(initialCompetitions);
+  const [userInterests, setUserInterests] = React.useState<string[]>(interests);
+  const [interestsOpen, setInterestsOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [region, setRegion] = React.useState("");
   const [format, setFormat] = React.useState("");
   const [deadline, setDeadline] = React.useState("");
-  const [sort, setSort] = React.useState<SortKey>("deadline");
+  // Default to the personalised feed when the student has picked interests.
+  const [sort, setSort] = React.useState<SortKey>(interests.length ? "foryou" : "deadline");
   const [savedIds, setSavedIds] = React.useState<Set<string>>(new Set(initialSavedIds));
   const [active, setActive] = React.useState<Competition | null>(null);
   const [editing, setEditing] = React.useState<Competition | null>(null);
   const [savingId, setSavingId] = React.useState<string | null>(null);
 
+  const forYou = sort === "foryou";
+
   const filtered = React.useMemo(() => {
+    const interestSet = new Set(userInterests);
+    const historySet = new Set(historyCategories);
     let list = competitions.filter((c) => {
       if (query) {
         const q = query.toLowerCase();
@@ -68,8 +93,21 @@ export function CompetitionsBrowser({
         if (deadline === "week" && d > 7) return false;
         if (deadline === "month" && d > 30) return false;
       }
+      // The "For You" feed is for discovery: hide closed and already-saved comps.
+      if (forYou) {
+        const d = daysUntil(c.deadline);
+        if (d !== null && d < 0) return false;
+        if (savedIds.has(c.id)) return false;
+      }
       return true;
     });
+
+    if (forYou) {
+      list = [...list].sort(
+        (a, b) => forYouScore(b, interestSet, historySet) - forYouScore(a, interestSet, historySet)
+      );
+      return list;
+    }
 
     list = [...list].sort((a, b) => {
       if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
@@ -82,7 +120,7 @@ export function CompetitionsBrowser({
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return list;
-  }, [competitions, query, category, region, format, deadline, sort]);
+  }, [competitions, query, category, region, format, deadline, sort, forYou, savedIds, userInterests, historyCategories]);
 
   async function toggleSave(comp: Competition, e?: React.MouseEvent) {
     e?.stopPropagation();
@@ -125,6 +163,35 @@ export function CompetitionsBrowser({
       {/* filter bar */}
       <div className="sticky top-[84px] z-30 -mx-2 mb-6 rounded-xl border border-ink/10 bg-panel/95 p-3 shadow-hard-card backdrop-blur">
         <div className="flex flex-col gap-3">
+          {loggedIn && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSort(forYou ? "deadline" : "foryou")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors",
+                  forYou
+                    ? "border-transparent bg-ember text-white"
+                    : "border-ink/15 text-ink-soft hover:border-ink/30"
+                )}
+              >
+                <Sparkles className="h-4 w-4" /> For You
+              </button>
+              <button
+                type="button"
+                onClick={() => setInterestsOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink/30"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {userInterests.length ? "Edit interests" : "Pick your interests"}
+              </button>
+              {forYou && (
+                <span className="text-xs text-ink-faint">
+                  Ranked for you{userInterests.length ? "" : " — pick interests to improve this"}
+                </span>
+              )}
+            </div>
+          )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
             <Input
@@ -157,6 +224,7 @@ export function CompetitionsBrowser({
               <option value="month">This month</option>
             </Select>
             <Select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+              {loggedIn && <option value="foryou">Sort: For You</option>}
               <option value="deadline">Sort: Deadline</option>
               <option value="newest">Sort: Newest</option>
               <option value="saved">Sort: Featured</option>
@@ -289,6 +357,18 @@ export function CompetitionsBrowser({
             setCompetitions((list) => list.map((x) => (x.id === c.id ? c : x)));
             setActive((a) => (a && a.id === c.id ? c : a));
             setEditing(null);
+          }}
+        />
+      )}
+
+      {loggedIn && (
+        <InterestsDialog
+          open={interestsOpen}
+          onClose={() => setInterestsOpen(false)}
+          initialInterests={userInterests}
+          onSaved={(next) => {
+            setUserInterests(next);
+            if (next.length) setSort("foryou");
           }}
         />
       )}

@@ -15,6 +15,7 @@ export interface AppUser {
   role: UserRole;
   avatar_url: string | null;
   is_portfolio_public: boolean;
+  interests: string[];
   created_at: string;
 }
 

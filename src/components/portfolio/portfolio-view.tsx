@@ -19,18 +19,23 @@ import { Input, Textarea, Label, Select } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityCard } from "./activity-card";
+import { DownloadResumeButton, type ResumeProfile } from "./resume-document";
 import { CATEGORIES, cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import type { CustomActivity } from "@/lib/types";
+import type { CustomActivity, Participation } from "@/lib/types";
 
 export function PortfolioView({
   userId,
   initialActivities,
   initialPublic,
+  achievements = [],
+  profile,
 }: {
   userId: string;
   initialActivities: CustomActivity[];
   initialPublic: boolean;
+  achievements?: Participation[];
+  profile: ResumeProfile;
 }) {
   const [activities, setActivities] = React.useState(initialActivities);
   const [isPublic, setIsPublic] = React.useState(initialPublic);
@@ -111,13 +116,16 @@ export function PortfolioView({
         </div>
       </div>
 
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {activities.length} activit{activities.length === 1 ? "y" : "ies"} showcased
         </p>
-        <Button onClick={() => setAddOpen(true)}>
-          <PlusCircle className="h-4 w-4" /> Add Activity
-        </Button>
+        <div className="flex items-center gap-2">
+          <DownloadResumeButton profile={profile} achievements={achievements} activities={activities} />
+          <Button onClick={() => setAddOpen(true)}>
+            <PlusCircle className="h-4 w-4" /> Add Activity
+          </Button>
+        </div>
       </div>
 
       {activities.length === 0 ? (

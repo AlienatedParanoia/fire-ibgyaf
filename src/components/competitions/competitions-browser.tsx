@@ -255,9 +255,9 @@ export function CompetitionsBrowser({
           {filtered.map((comp, i) => (
             <motion.div
               key={comp.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: Math.min(i * 0.03, 0.3) }}
+              transition={{ duration: 0.22, delay: Math.min(i * 0.012, 0.1) }}
             >
               <CompetitionCard
                 comp={comp}

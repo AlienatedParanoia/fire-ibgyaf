@@ -1,40 +1,42 @@
+import { unstable_cache } from "next/cache";
 import { getSupabaseServer, getCurrentUser } from "@/lib/supabase/server";
+import { getSupabasePublic } from "@/lib/supabase/public";
 import { CompetitionsBrowser } from "@/components/competitions/competitions-browser";
 import type { Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-async function getData() {
+// Public, viewer-agnostic data (the competition list + aggregate interest
+// counts) — cached so most visits skip the DB. Revalidates every 60s.
+const getPublicCompetitions = unstable_cache(
+  async () => {
+    const supabase = getSupabasePublic();
+    if (!supabase) return { competitions: [] as Competition[], interestCounts: {} as Record<string, number> };
+
+    const { data: competitions } = await supabase
+      .from("competitions")
+      .select("*")
+      .eq("is_approved", true)
+      .order("is_featured", { ascending: false })
+      .order("deadline", { ascending: true });
+
+    const interestCounts: Record<string, number> = {};
+    const { data: counts } = await supabase.rpc("competition_interest_counts");
+    for (const row of (counts ?? []) as { competition_id: string; n: number }[]) {
+      if (row.competition_id) interestCounts[row.competition_id] = Number(row.n);
+    }
+    return { competitions: (competitions ?? []) as Competition[], interestCounts };
+  },
+  ["competitions-page"],
+  { revalidate: 60 }
+);
+
+async function getViewerData() {
   const supabase = getSupabaseServer();
   const { authUser, profile } = await getCurrentUser();
-  if (!supabase)
-    return {
-      competitions: [] as Competition[],
-      savedIds: [] as string[],
-      loggedIn: false,
-      isAdmin: false,
-      interests: [] as string[],
-      historyCategories: [] as string[],
-      interestCounts: {} as Record<string, number>,
-    };
-
-  const { data: competitions } = await supabase
-    .from("competitions")
-    .select("*")
-    .eq("is_approved", true)
-    .order("is_featured", { ascending: false })
-    .order("deadline", { ascending: true });
-
-  // Social proof: aggregate tracker counts per competition (no PII, via RPC).
-  const interestCounts: Record<string, number> = {};
-  const { data: counts } = await supabase.rpc("competition_interest_counts");
-  for (const row of (counts ?? []) as { competition_id: string; n: number }[]) {
-    if (row.competition_id) interestCounts[row.competition_id] = Number(row.n);
-  }
-
   let savedIds: string[] = [];
   let historyCategories: string[] = [];
-  if (authUser) {
+  if (supabase && authUser) {
     const { data: saved } = await supabase
       .from("participation")
       .select("competition_id, competitions(category)")
@@ -54,21 +56,18 @@ async function getData() {
       )
     );
   }
-
   return {
-    competitions: (competitions ?? []) as Competition[],
     savedIds,
     loggedIn: !!authUser,
     isAdmin: profile?.role === "admin",
     interests: (profile?.interests ?? []) as string[],
     historyCategories,
-    interestCounts,
   };
 }
 
 export default async function CompetitionsPage() {
-  const { competitions, savedIds, loggedIn, isAdmin, interests, historyCategories, interestCounts } =
-    await getData();
+  const [{ competitions, interestCounts }, { savedIds, loggedIn, isAdmin, interests, historyCategories }] =
+    await Promise.all([getPublicCompetitions(), getViewerData()]);
   return (
     <div className="container py-10">
       <header className="mb-8 border-b border-ink/10 pb-6">

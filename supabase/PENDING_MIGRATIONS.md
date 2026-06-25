@@ -73,3 +73,7 @@ Run the **PR 1** block from `supabase/migration-admin.sql`.
 Adds an admin policy so admins can manage `participation` for any user, and a trigger
 (`sync_club_member_count`) that keeps `clubs.member_count` accurate as members are added/
 removed. Run the **PR 2** block from `supabase/migration-admin.sql`.
+
+## ⬜ Admin PR 3 — Participation admin + notification composer
+Adds a `notifications admin insert` policy so admins can send in-app notifications to any
+user (compose / broadcast). Run the **PR 3** block from `supabase/migration-admin.sql`.

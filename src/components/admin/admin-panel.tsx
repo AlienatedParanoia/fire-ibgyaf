@@ -16,6 +16,8 @@ import {
   Radio,
   PenSquare,
   ClipboardList,
+  ListChecks,
+  Bell,
 } from "lucide-react";
 import type { AdminData } from "@/app/admin/page";
 import { cn, formatDate } from "@/lib/utils";
@@ -38,12 +40,16 @@ import { SubmissionsSection } from "./submissions-section";
 import { SettingsSection } from "./settings-section";
 import { CompetitionsManage } from "./competitions-manage";
 import { ClubsManage } from "./clubs-manage";
+import { ParticipationSection } from "./participation-section";
+import { NotificationsSection } from "./notifications-section";
 
 type Section =
   | "overview"
   | "users"
   | "competitions"
   | "clubs"
+  | "participation"
+  | "notifications"
   | "comp-approvals"
   | "club-approvals"
   | "submissions"
@@ -62,6 +68,8 @@ export function AdminPanel({ data }: { data: AdminData }) {
     { key: "users",          label: "Users",                  icon: Users },
     { key: "competitions",   label: "Manage Competitions",    icon: Trophy,      badge: data.competitions.length },
     { key: "clubs",          label: "Manage Clubs",           icon: Building2,   badge: data.clubs.length },
+    { key: "participation",  label: "Participation",          icon: ListChecks,  badge: data.participation.length },
+    { key: "notifications",  label: "Send Notification",      icon: Bell },
     { key: "comp-approvals", label: "Competition Approvals",  icon: ClipboardList, badge: pendingComps },
     { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: pendingClubs },
     { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: pendingSubs },
@@ -119,6 +127,15 @@ export function AdminPanel({ data }: { data: AdminData }) {
           {section === "users"          && <UsersSection users={data.users} />}
           {section === "competitions"   && <CompetitionsManage initial={data.competitions} clubs={data.clubs} />}
           {section === "clubs"          && <ClubsManage initial={data.clubs} users={data.users} />}
+          {section === "participation"  && (
+            <ParticipationSection
+              participation={data.participation}
+              users={data.users}
+              competitions={data.competitions}
+              clubs={data.clubs}
+            />
+          )}
+          {section === "notifications"  && <NotificationsSection users={data.users} />}
           {section === "comp-approvals" && (
             <ApprovalsSection kind="competition" competitions={data.competitions} />
           )}

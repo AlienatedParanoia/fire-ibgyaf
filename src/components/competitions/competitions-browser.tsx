@@ -17,6 +17,7 @@ import {
   Pencil,
   Sparkles,
   SlidersHorizontal,
+  Flame,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Countdown } from "@/components/countdown";
 import { CategoryBadge, FormatBadge, RegionBadge } from "./badges";
 import { CompetitionFormDialog } from "./competition-form-dialog";
+import { TeammatesPanel } from "./teammates-panel";
 import { InterestsDialog } from "@/components/interests-dialog";
 import { CATEGORIES, cn, daysUntil, deadlineUrgency, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -50,6 +52,7 @@ export function CompetitionsBrowser({
   isAdmin = false,
   interests = [],
   historyCategories = [],
+  interestCounts = {},
 }: {
   initialCompetitions: Competition[];
   initialSavedIds: string[];
@@ -57,6 +60,7 @@ export function CompetitionsBrowser({
   isAdmin?: boolean;
   interests?: string[];
   historyCategories?: string[];
+  interestCounts?: Record<string, number>;
 }) {
   const [competitions, setCompetitions] = React.useState<Competition[]>(initialCompetitions);
   const [userInterests, setUserInterests] = React.useState<string[]>(interests);
@@ -259,6 +263,7 @@ export function CompetitionsBrowser({
                 comp={comp}
                 saved={savedIds.has(comp.id)}
                 saving={savingId === comp.id}
+                interest={interestCounts[comp.id] ?? 0}
                 onSave={(e) => toggleSave(comp, e)}
                 onOpen={() => setActive(comp)}
               />
@@ -292,11 +297,18 @@ export function CompetitionsBrowser({
             </div>
 
             <h2 className="pr-6 font-heading text-2xl font-medium text-ink">{active.title}</h2>
-            {active.organizer && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-faint">
-                <Building2 className="h-4 w-4" /> {active.organizer}
-              </p>
-            )}
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-faint">
+              {active.organizer && (
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4" /> {active.organizer}
+                </span>
+              )}
+              {(interestCounts[active.id] ?? 0) >= 3 && (
+                <span className="flex items-center gap-1 font-semibold text-coral">
+                  <Flame className="h-4 w-4" /> {interestCounts[active.id]} students interested
+                </span>
+              )}
+            </div>
 
             <div className="mt-5 rounded-xl border border-ink/10 bg-paper p-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
@@ -344,6 +356,8 @@ export function CompetitionsBrowser({
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
+
+            <TeammatesPanel competitionId={active.id} loggedIn={loggedIn} />
           </div>
         )}
       </Dialog>
@@ -387,10 +401,11 @@ function Detail({ label, value, icon }: { label: string; value: string; icon?: R
   );
 }
 
-function CompetitionCard({ comp, saved, saving, onSave, onOpen }: {
+function CompetitionCard({ comp, saved, saving, interest, onSave, onOpen }: {
   comp: Competition;
   saved: boolean;
   saving: boolean;
+  interest: number;
   onSave: (e: React.MouseEvent) => void;
   onOpen: () => void;
 }) {
@@ -440,6 +455,11 @@ function CompetitionCard({ comp, saved, saving, onSave, onOpen }: {
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <FormatBadge format={comp.format} />
         <RegionBadge region={comp.region} />
+        {interest >= 3 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-coral/10 px-2 py-0.5 text-[11px] font-semibold text-coral">
+            <Flame className="h-3 w-3" /> {interest} interested
+          </span>
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-ink/8 pt-3">

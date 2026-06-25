@@ -15,6 +15,7 @@ async function getData() {
       isAdmin: false,
       interests: [] as string[],
       historyCategories: [] as string[],
+      interestCounts: {} as Record<string, number>,
     };
 
   const { data: competitions } = await supabase
@@ -23,6 +24,13 @@ async function getData() {
     .eq("is_approved", true)
     .order("is_featured", { ascending: false })
     .order("deadline", { ascending: true });
+
+  // Social proof: aggregate tracker counts per competition (no PII, via RPC).
+  const interestCounts: Record<string, number> = {};
+  const { data: counts } = await supabase.rpc("competition_interest_counts");
+  for (const row of (counts ?? []) as { competition_id: string; n: number }[]) {
+    if (row.competition_id) interestCounts[row.competition_id] = Number(row.n);
+  }
 
   let savedIds: string[] = [];
   let historyCategories: string[] = [];
@@ -54,11 +62,13 @@ async function getData() {
     isAdmin: profile?.role === "admin",
     interests: (profile?.interests ?? []) as string[],
     historyCategories,
+    interestCounts,
   };
 }
 
 export default async function CompetitionsPage() {
-  const { competitions, savedIds, loggedIn, isAdmin, interests, historyCategories } = await getData();
+  const { competitions, savedIds, loggedIn, isAdmin, interests, historyCategories, interestCounts } =
+    await getData();
   return (
     <div className="container py-10">
       <header className="mb-8 border-b border-ink/10 pb-6">
@@ -80,6 +90,7 @@ export default async function CompetitionsPage() {
         isAdmin={isAdmin}
         interests={interests}
         historyCategories={historyCategories}
+        interestCounts={interestCounts}
       />
     </div>
   );

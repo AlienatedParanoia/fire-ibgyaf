@@ -99,7 +99,7 @@ function SetupNotice() {
       <p className="font-semibold">Demo mode</p>
       <p className="mt-0.5">
         Supabase isn&apos;t configured yet. Add keys to <code>.env.local</code> and run the seed script.
-        Demo login: <code>admin@fire.sg</code> / <code>FirePass123!</code>
+        Demo login: <code>student@fire.sg</code> / <code>FirePass123!</code>
       </p>
     </div>
   );

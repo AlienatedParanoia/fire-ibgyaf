@@ -6,7 +6,8 @@
  *
  * Prerequisites:
  *   1. Run supabase/schema.sql in the Supabase SQL editor first.
- *   2. Fill NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local
+ *   2. Fill NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and
+ *      SEED_DEMO_PASSWORD in .env.local
  *
  * Usage:  node scripts/seed.mjs
  */
@@ -33,18 +34,25 @@ loadEnv();
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Demo-account password is provided at runtime, never hardcoded in the repo.
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD;
 
 if (!url || !serviceKey) {
   console.error("✗ Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
   process.exit(1);
 }
 
+if (!DEMO_PASSWORD) {
+  console.error("✗ Missing SEED_DEMO_PASSWORD — set it in .env.local to seed demo accounts.");
+  process.exit(1);
+}
+
 const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
 const DEMO_USERS = [
-  { email: "admin@fire.sg", password: "FirePass123!", full_name: "Ava Admin", school: "Raffles Institution", grade: "Staff", role: "admin" },
-  { email: "leader@fire.sg", password: "FirePass123!", full_name: "Leo Leader", school: "Hwa Chong Institution", grade: "JC2", role: "club_leader" },
-  { email: "student@fire.sg", password: "FirePass123!", full_name: "Sam Student", school: "Victoria School", grade: "Secondary 3", role: "student" },
+  { email: "admin@fire.sg", password: DEMO_PASSWORD, full_name: "Ava Admin", school: "Raffles Institution", grade: "Staff", role: "admin" },
+  { email: "leader@fire.sg", password: DEMO_PASSWORD, full_name: "Leo Leader", school: "Hwa Chong Institution", grade: "JC2", role: "club_leader" },
+  { email: "student@fire.sg", password: DEMO_PASSWORD, full_name: "Sam Student", school: "Victoria School", grade: "Secondary 3", role: "student" },
 ];
 
 async function ensureUser(u) {
@@ -76,7 +84,7 @@ async function ensureUser(u) {
 async function main() {
   console.log("Seeding F.I.R.E …\n");
 
-  console.log("Demo accounts (password: FirePass123!):");
+  console.log("Demo accounts (password: from SEED_DEMO_PASSWORD):");
   const ids = {};
   for (const u of DEMO_USERS) ids[u.role] = await ensureUser(u);
 
@@ -90,7 +98,7 @@ async function main() {
   );
   void seedSql;
 
-  console.log("\n✓ Seed complete. Log in at /login with admin@fire.sg / FirePass123!");
+  console.log("\n✓ Seed complete. Log in at /login with student@fire.sg (password: your SEED_DEMO_PASSWORD).");
 }
 
 main().catch((e) => {

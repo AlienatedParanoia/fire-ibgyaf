@@ -55,3 +55,16 @@ Run the **Phase 4** block from `supabase/migration-features.sql`, which creates:
 - `NEXT_PUBLIC_SITE_URL` — e.g. `https://fire-ibgyaf.vercel.app` (used in email links)
 
 The daily cron is configured in `vercel.json` (`/api/cron/reminders`).
+
+---
+
+# Admin control work (`supabase/migration-admin.sql`)
+
+Separate file from the feature roadmap. Run after `migration-features.sql`. Idempotent.
+
+## ⬜ Admin PR 1 — Image uploads
+Creates the public **`media`** Storage bucket + policies (public read; insert/update/delete
+restricted to admins via `public.is_admin()`). Used for club logos/banners, competition
+banners, and user avatars uploaded from the admin panel.
+
+Run the **PR 1** block from `supabase/migration-admin.sql`.

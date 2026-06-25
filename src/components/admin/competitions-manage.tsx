@@ -10,9 +10,9 @@ import { CompetitionFormDialog } from "@/components/competitions/competition-for
 import { cn, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SectionHeading } from "./users-section";
-import type { Competition } from "@/lib/types";
+import type { Club, Competition } from "@/lib/types";
 
-export function CompetitionsManage({ initial }: { initial: Competition[] }) {
+export function CompetitionsManage({ initial, clubs = [] }: { initial: Competition[]; clubs?: Club[] }) {
   const [items, setItems] = React.useState(initial);
   const [q, setQ] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
@@ -185,6 +185,7 @@ export function CompetitionsManage({ initial }: { initial: Competition[] }) {
         competition={editing}
         onClose={closeDialog}
         onSaved={onSaved}
+        clubs={clubs}
       />
     </div>
   );

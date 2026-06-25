@@ -6,9 +6,10 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea, Label } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { CATEGORIES } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import type { Club } from "@/lib/types";
+import type { AppUser, Club } from "@/lib/types";
 
 type FormState = {
   name: string;
@@ -17,12 +18,16 @@ type FormState = {
   meeting_schedule: string;
   contact_email: string;
   contact_person: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  leader_id: string;
   is_approved: boolean;
 };
 
 const EMPTY: FormState = {
   name: "", category: "", description: "",
   meeting_schedule: "", contact_email: "", contact_person: "",
+  logo_url: null, banner_url: null, leader_id: "",
   is_approved: true,
 };
 
@@ -33,6 +38,9 @@ function fromClub(c: Club): FormState {
     meeting_schedule: c.meeting_schedule ?? "",
     contact_email: c.contact_email ?? "",
     contact_person: c.contact_person ?? "",
+    logo_url: c.logo_url ?? null,
+    banner_url: c.banner_url ?? null,
+    leader_id: c.leader_id ?? "",
     is_approved: c.is_approved,
   };
 }
@@ -47,12 +55,14 @@ export function ClubFormDialog({
   club,
   onSaved,
   showAdminToggles = true,
+  users = [],
 }: {
   open: boolean;
   onClose: () => void;
   club: Club | null;
   onSaved: (c: Club) => void;
   showAdminToggles?: boolean;
+  users?: AppUser[];
 }) {
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [saving, setSaving] = React.useState(false);
@@ -77,6 +87,9 @@ export function ClubFormDialog({
       meeting_schedule: form.meeting_schedule || null,
       contact_email: form.contact_email || null,
       contact_person: form.contact_person || null,
+      logo_url: form.logo_url || null,
+      banner_url: form.banner_url || null,
+      leader_id: form.leader_id || null,
       is_approved: form.is_approved,
     };
     if (club) {
@@ -128,6 +141,33 @@ export function ClubFormDialog({
         <div className="sm:col-span-2">
           <Label>Description</Label>
           <Textarea value={form.description} onChange={set("description")} placeholder="What does this club do?" />
+        </div>
+        <div>
+          <Label>Club leader</Label>
+          <Select value={form.leader_id} onChange={set("leader_id")}>
+            <option value="">No leader assigned</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="flex items-end gap-4">
+          <ImageUpload
+            label="Logo"
+            value={form.logo_url}
+            onChange={(url) => setForm((f) => ({ ...f, logo_url: url }))}
+            pathPrefix="clubs/logos"
+            aspect="square"
+            className="shrink-0"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <ImageUpload
+            label="Banner image"
+            value={form.banner_url}
+            onChange={(url) => setForm((f) => ({ ...f, banner_url: url }))}
+            pathPrefix="clubs/banners"
+          />
         </div>
         {showAdminToggles && (
           <label className="flex cursor-pointer items-center gap-3">

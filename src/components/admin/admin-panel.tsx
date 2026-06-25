@@ -117,8 +117,8 @@ export function AdminPanel({ data }: { data: AdminData }) {
         >
           {section === "overview"       && <Overview data={data} />}
           {section === "users"          && <UsersSection users={data.users} />}
-          {section === "competitions"   && <CompetitionsManage initial={data.competitions} />}
-          {section === "clubs"          && <ClubsManage initial={data.clubs} />}
+          {section === "competitions"   && <CompetitionsManage initial={data.competitions} clubs={data.clubs} />}
+          {section === "clubs"          && <ClubsManage initial={data.clubs} users={data.users} />}
           {section === "comp-approvals" && (
             <ApprovalsSection kind="competition" competitions={data.competitions} />
           )}

@@ -6,9 +6,10 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea, Label } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { CATEGORIES } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import type { Competition, CompFormat, CompRegion } from "@/lib/types";
+import type { Club, Competition, CompFormat, CompRegion } from "@/lib/types";
 
 type FormState = {
   title: string;
@@ -22,6 +23,8 @@ type FormState = {
   eligibility: string;
   registration_link: string;
   prize: string;
+  banner_url: string | null;
+  club_id: string;
   is_approved: boolean;
   is_featured: boolean;
 };
@@ -31,6 +34,7 @@ const EMPTY: FormState = {
   format: "online", region: "Singapore",
   deadline: "", event_date: "", eligibility: "",
   registration_link: "", prize: "",
+  banner_url: null, club_id: "",
   is_approved: true, is_featured: false,
 };
 
@@ -44,6 +48,8 @@ function fromCompetition(c: Competition): FormState {
     eligibility: c.eligibility ?? "",
     registration_link: c.registration_link ?? "",
     prize: c.prize ?? "",
+    banner_url: c.banner_url ?? null,
+    club_id: c.club_id ?? "",
     is_approved: c.is_approved, is_featured: c.is_featured,
   };
 }
@@ -58,12 +64,14 @@ export function CompetitionFormDialog({
   competition,
   onSaved,
   showAdminToggles = true,
+  clubs = [],
 }: {
   open: boolean;
   onClose: () => void;
   competition: Competition | null;
   onSaved: (c: Competition) => void;
   showAdminToggles?: boolean;
+  clubs?: Club[];
 }) {
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [saving, setSaving] = React.useState(false);
@@ -94,6 +102,8 @@ export function CompetitionFormDialog({
       eligibility: form.eligibility || null,
       registration_link: form.registration_link || null,
       prize: form.prize || null,
+      banner_url: form.banner_url || null,
+      club_id: form.club_id || null,
       is_approved: form.is_approved,
       is_featured: form.is_featured,
     };
@@ -174,6 +184,21 @@ export function CompetitionFormDialog({
         <div className="sm:col-span-2">
           <Label>Registration Link</Label>
           <Input type="url" value={form.registration_link} onChange={set("registration_link")} placeholder="https://…" />
+        </div>
+        <div>
+          <Label>Hosting club</Label>
+          <Select value={form.club_id} onChange={set("club_id")}>
+            <option value="">No club</option>
+            {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Select>
+        </div>
+        <div className="sm:col-span-2">
+          <ImageUpload
+            label="Banner image"
+            value={form.banner_url}
+            onChange={(url) => setForm((f) => ({ ...f, banner_url: url }))}
+            pathPrefix="competitions"
+          />
         </div>
         {showAdminToggles && (
           <>

@@ -76,3 +76,12 @@ drop trigger if exists participation_member_count on public.participation;
 create trigger participation_member_count
   after insert or delete on public.participation
   for each row execute function public.sync_club_member_count();
+
+-- ============================================================================
+-- PR 3 — Participation admin + notification composer
+--   • let admins create notifications for any user (compose/broadcast)
+-- ============================================================================
+
+drop policy if exists "notifications admin insert" on public.notifications;
+create policy "notifications admin insert" on public.notifications
+  for insert to authenticated with check (public.is_admin());

@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { PageTransition } from "@/components/page-transition";
+import { RouteLoader } from "@/components/route-loader";
 import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable} ${hand.variable}`}>
       <body className="flex min-h-screen flex-col bg-background">
+        <RouteLoader />
         <Navbar profile={profile ?? null} />
         <main className="flex-1">
           <PageTransition>{children}</PageTransition>

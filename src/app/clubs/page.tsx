@@ -1,43 +1,47 @@
-import { getSupabaseServer, getCurrentUser } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { getCurrentUser } from "@/lib/supabase/server";
+import { getSupabasePublic } from "@/lib/supabase/public";
 import { ClubsGrid } from "@/components/clubs/clubs-grid";
 import type { Club, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-async function getData() {
-  const supabase = getSupabaseServer();
-  const { profile } = await getCurrentUser();
-  if (!supabase) return { clubs: [] as Club[], compsByClub: {} as Record<string, Competition[]>, isAdmin: false };
+// Public, viewer-agnostic data — cached so navigating here doesn't hit the DB
+// on every visit. Revalidates every 60s (admin edits appear within a minute).
+const getPublicClubs = unstable_cache(
+  async () => {
+    const supabase = getSupabasePublic();
+    if (!supabase) return { clubs: [] as Club[], compsByClub: {} as Record<string, Competition[]> };
 
-  const { data: clubs } = await supabase
-    .from("clubs")
-    .select("*")
-    .eq("is_approved", true)
-    .order("member_count", { ascending: false });
-
-  const clubList = (clubs ?? []) as Club[];
-
-  // Competitions run by these clubs, grouped by club_id
-  const compsByClub: Record<string, Competition[]> = {};
-  if (clubList.length) {
-    const { data: comps } = await supabase
-      .from("competitions")
+    const { data: clubs } = await supabase
+      .from("clubs")
       .select("*")
       .eq("is_approved", true)
-      .in("club_id", clubList.map((c) => c.id))
-      .order("deadline", { ascending: true });
+      .order("member_count", { ascending: false });
+    const clubList = (clubs ?? []) as Club[];
 
-    for (const comp of (comps ?? []) as Competition[]) {
-      if (!comp.club_id) continue;
-      (compsByClub[comp.club_id] ??= []).push(comp);
+    const compsByClub: Record<string, Competition[]> = {};
+    if (clubList.length) {
+      const { data: comps } = await supabase
+        .from("competitions")
+        .select("*")
+        .eq("is_approved", true)
+        .in("club_id", clubList.map((c) => c.id))
+        .order("deadline", { ascending: true });
+      for (const comp of (comps ?? []) as Competition[]) {
+        if (!comp.club_id) continue;
+        (compsByClub[comp.club_id] ??= []).push(comp);
+      }
     }
-  }
-
-  return { clubs: clubList, compsByClub, isAdmin: profile?.role === "admin" };
-}
+    return { clubs: clubList, compsByClub };
+  },
+  ["clubs-page"],
+  { revalidate: 60 }
+);
 
 export default async function ClubsPage() {
-  const { clubs, compsByClub, isAdmin } = await getData();
+  const [{ clubs, compsByClub }, { profile }] = await Promise.all([getPublicClubs(), getCurrentUser()]);
+  const isAdmin = profile?.role === "admin";
   return (
     <div className="container py-10">
       <header className="mb-8">

@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { PortfolioView } from "@/components/portfolio/portfolio-view";
-import type { CustomActivity } from "@/lib/types";
+import type { CustomActivity, Participation } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -8,11 +8,22 @@ export default async function PortfolioPage() {
   const { authUser, profile, supabase } = await requireUser();
   const uid = authUser!.id;
 
-  const { data: activities } = await supabase
-    .from("custom_activities")
-    .select("*")
-    .eq("user_id", uid)
-    .order("date", { ascending: false });
+  const [actRes, achRes] = await Promise.all([
+    supabase
+      .from("custom_activities")
+      .select("*")
+      .eq("user_id", uid)
+      .order("date", { ascending: false }),
+    // Competition outcomes worth putting on a resume.
+    supabase
+      .from("participation")
+      .select("*, competitions(*)")
+      .eq("user_id", uid)
+      .in("status", ["participated", "won"]),
+  ]);
+
+  const activities = actRes.data;
+  const achievements = (achRes.data ?? []) as Participation[];
 
   return (
     <div className="container py-10">
@@ -27,6 +38,12 @@ export default async function PortfolioPage() {
         userId={uid}
         initialActivities={(activities ?? []) as CustomActivity[]}
         initialPublic={profile?.is_portfolio_public ?? false}
+        achievements={achievements}
+        profile={{
+          full_name: profile?.full_name ?? null,
+          school: profile?.school ?? null,
+          grade: profile?.grade ?? null,
+        }}
       />
     </div>
   );

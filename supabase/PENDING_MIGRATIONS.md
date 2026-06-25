@@ -34,7 +34,12 @@ Source: `supabase/migration-features.sql`
 
 ---
 
+## ✅ Phase 3 — Portfolio PDF export
+No Supabase changes — uses existing `custom_activities` + `participation` data and the
+browser's native print-to-PDF. Nothing to run.
+
+---
+
 <!-- Future phases will be appended below as they're built:
-## ⬜ Phase 3 — Portfolio PDF export   (no DB changes expected)
 ## ⬜ Phase 4 — Reminders + notifications
 -->

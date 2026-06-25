@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Search, Trash2, Loader2 } from "lucide-react";
+import { Search, Trash2, Loader2, Pencil } from "lucide-react";
 import { Input, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UserEditDialog } from "./user-edit-dialog";
 import { cn, formatDate, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { AppUser, UserRole } from "@/lib/types";
@@ -21,6 +22,7 @@ export function UsersSection({ users: initial }: { users: AppUser[] }) {
   const [q, setQ] = React.useState("");
   const [role, setRole] = React.useState("");
   const [deleting, setDeleting] = React.useState<string | null>(null);
+  const [editing, setEditing] = React.useState<AppUser | null>(null);
 
   const filtered = users.filter((u) => {
     if (role && u.role !== role) return false;
@@ -124,7 +126,15 @@ export function UsersSection({ users: initial }: { users: AppUser[] }) {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditing(u)}
+                        aria-label="Edit user"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -151,6 +161,13 @@ export function UsersSection({ users: initial }: { users: AppUser[] }) {
           </table>
         </div>
       </div>
+
+      <UserEditDialog
+        open={!!editing}
+        user={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(u) => setUsers((l) => l.map((x) => (x.id === u.id ? u : x)))}
+      />
     </div>
   );
 }

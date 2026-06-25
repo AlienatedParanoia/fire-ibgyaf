@@ -68,3 +68,8 @@ restricted to admins via `public.is_admin()`). Used for club logos/banners, comp
 banners, and user avatars uploaded from the admin panel.
 
 Run the **PR 1** block from `supabase/migration-admin.sql`.
+
+## ⬜ Admin PR 2 — Full user editing + club members
+Adds an admin policy so admins can manage `participation` for any user, and a trigger
+(`sync_club_member_count`) that keeps `clubs.member_count` accurate as members are added/
+removed. Run the **PR 2** block from `supabase/migration-admin.sql`.

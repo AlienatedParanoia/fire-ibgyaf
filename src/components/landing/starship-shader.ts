@@ -131,17 +131,41 @@ export function ensureStarshipShader() {
 
     this._canvas = canvas;
     this._resize();
-    this._ro = new ResizeObserver(() => this._resize());
-    this._ro.observe(this);
+
+    const reduce =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const t0 = performance.now();
-    const frame = (now: number) => {
-      if (!this.isConnected) return;
+    const draw = (now: number) => {
+      if (!this.isConnected || gl.isContextLost()) return;
       gl.uniform1f(this._u!.time, (now - t0) / 1000);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      this._raf = requestAnimationFrame(frame);
     };
-    this._raf = requestAnimationFrame(frame);
+    const frame = (now: number) => {
+      draw(now);
+      if (this.isConnected && !gl.isContextLost()) this._raf = requestAnimationFrame(frame);
+    };
+
+    // Repaint on resize; under reduced motion this is the only repaint.
+    this._ro = new ResizeObserver(() => {
+      this._resize();
+      if (reduce) draw(performance.now());
+    });
+    this._ro.observe(this);
+
+    // On context loss, stop the loop and preventDefault so the browser keeps
+    // the canvas — we degrade to the element's #000 background rather than
+    // spinning no-op draws. (The isContextLost guards above also halt it.)
+    canvas.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      cancelAnimationFrame(this._raf);
+    });
+
+    // Honor prefers-reduced-motion: render one static frame, no animation loop.
+    if (reduce) draw(performance.now());
+    else this._raf = requestAnimationFrame(frame);
   }
 
   private _resize() {

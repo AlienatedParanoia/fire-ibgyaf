@@ -28,7 +28,18 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Send already-authenticated users away from the auth pages.
+  const path = request.nextUrl.pathname;
+  if (user && (path === "/login" || path === "/signup")) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/dashboard";
+    return NextResponse.redirect(dest);
+  }
+
   return response;
 }
 

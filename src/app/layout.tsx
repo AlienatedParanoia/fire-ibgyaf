@@ -3,6 +3,7 @@ import { Newsreader, Hanken_Grotesk, Caveat } from "next/font/google";
 import { Toaster } from "sonner";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { HideOnAuthRoutes } from "@/components/hide-on-auth-routes";
 import { PageTransition } from "@/components/page-transition";
 import { RouteLoader } from "@/components/route-loader";
 import { getCurrentUser } from "@/lib/supabase/server";
@@ -26,11 +27,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={`${serif.variable} ${sans.variable} ${hand.variable}`}>
       <body className="flex min-h-screen flex-col bg-background">
         <RouteLoader />
-        <Navbar profile={profile ?? null} />
+        <HideOnAuthRoutes>
+          <Navbar profile={profile ?? null} />
+        </HideOnAuthRoutes>
         <main className="flex-1">
           <PageTransition>{children}</PageTransition>
         </main>
-        <Footer />
+        <HideOnAuthRoutes>
+          <Footer />
+        </HideOnAuthRoutes>
         <Toaster
           position="top-right"
           richColors

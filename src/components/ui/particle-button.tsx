@@ -31,7 +31,10 @@ function ParticleButton({
 }: ParticleButtonProps) {
   const [showParticles, setShowParticles] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const prefersReduced = usePrefersReducedMotion();
+
+  React.useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     onClick?.(e);
@@ -40,7 +43,8 @@ function ParticleButton({
       return;
     }
     setShowParticles(true);
-    setTimeout(() => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       setShowParticles(false);
       onSuccess?.();
     }, successDuration);

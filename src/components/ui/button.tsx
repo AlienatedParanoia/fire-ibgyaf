@@ -28,7 +28,6 @@ export function usePrefersReducedMotion() {
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
   /**
    * Disable the click particle burst. Use for buttons that already have their
    * own click/motion animation, or where the burst would be distracting.
@@ -73,7 +72,7 @@ export function SuccessParticles({
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild: _asChild, noParticles, onClick, children, ...props }, ref) => {
+  ({ className, variant, size, noParticles, onClick, children, ...props }, ref) => {
     const innerRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => innerRef.current as HTMLButtonElement);
     const prefersReduced = usePrefersReducedMotion();

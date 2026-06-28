@@ -386,7 +386,7 @@ export function LandingExperience() {
 
   return (
     <div ref={rootRef} className="ed-root" style={{ position: "relative", background: "#FAF9F5", color: "#020202" }}>
-      <style>{ED_CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: ED_CSS }} />
 
       {/* scroll progress (top bar) */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: 60, background: "transparent", pointerEvents: "none" }}>

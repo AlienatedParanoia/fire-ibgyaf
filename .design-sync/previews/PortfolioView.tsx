@@ -25,14 +25,16 @@ const activities: any[] = [
   },
 ];
 
+const profile = { full_name: 'Tan Wei Jie', school: 'Raffles Institution', grade: 'Secondary 3' };
+
 export function PublicView() {
-  return <PortfolioView userId="u1" initialActivities={activities} initialPublic={true} />;
+  return <PortfolioView userId="u1" profile={profile} initialActivities={activities} initialPublic={true} />;
 }
 
 export function PrivateView() {
-  return <PortfolioView userId="u1" initialActivities={activities} initialPublic={false} />;
+  return <PortfolioView userId="u1" profile={profile} initialActivities={activities} initialPublic={false} />;
 }
 
 export function EmptyPortfolio() {
-  return <PortfolioView userId="u1" initialActivities={[]} initialPublic={false} />;
+  return <PortfolioView userId="u1" profile={profile} initialActivities={[]} initialPublic={false} />;
 }

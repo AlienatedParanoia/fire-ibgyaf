@@ -18,7 +18,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Logo } from "./logo";
-import { Button, buttonVariants } from "./ui/button";
+import { Button } from "./ui/button";
+import { buttonVariants } from "./ui/button-variants";
 import { NotificationsBell } from "./notifications-bell";
 import { cn, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";

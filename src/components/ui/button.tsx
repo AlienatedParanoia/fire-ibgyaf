@@ -1,55 +1,114 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+"use client";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[9px] text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        default:
-          "bg-ember text-white border-transparent shadow-[3px_3px_0_#211E18] hover:bg-ember-deep hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_#211E18]",
-        ember:
-          "bg-ember text-white border-transparent shadow-[3px_3px_0_#211E18] hover:bg-ember-deep hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_#211E18]",
-        sketch:
-          "bg-transparent text-ink border-[1.5px] border-ink shadow-[3px_3px_0_rgba(33,30,24,.18)] hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_rgba(33,30,24,.28)]",
-        outline:
-          "border border-ink/15 bg-panel text-ink hover:bg-paper",
-        ghost:
-          "text-ink hover:bg-paper",
-        subtle:
-          "bg-ember/10 text-ember hover:bg-ember/15",
-        destructive:
-          "bg-destructive text-white hover:bg-rose-700 shadow-sm",
-        link:
-          "text-pen underline-offset-4 hover:underline",
-        white:
-          "bg-white text-ember hover:bg-white/90 shadow-sm",
-        outlineLight:
-          "border border-white/50 bg-transparent text-white hover:bg-white/10",
-      },
-      size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 px-3 text-sm",
-        lg: "h-12 px-7 text-base",
-        icon: "h-10 w-10",
-      },
-    },
-    defaultVariants: { variant: "default", size: "default" },
-  }
-);
+import * as React from "react";
+import { type VariantProps } from "class-variance-authority";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "./button-variants";
+
+/**
+ * SSR-safe prefers-reduced-motion hook. Implemented locally (not via
+ * framer-motion's useReducedMotion) so the base Button's server-render path
+ * invokes no framer-motion function — its optimized import resolves to
+ * undefined in the server chunk and breaks prerendering.
+ */
+export function usePrefersReducedMotion() {
+  const [reduced, setReduced] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+  return reduced;
+}
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /**
+   * Disable the click particle burst. Use for buttons that already have their
+   * own click/motion animation, or where the burst would be distracting.
+   */
+  noParticles?: boolean;
+}
+
+/**
+ * A short burst of particles emanating from the center of `originRef`.
+ * Rendered in a fixed overlay so it is never clipped by the button's container.
+ */
+export function SuccessParticles({
+  originRef,
+}: {
+  originRef: React.RefObject<HTMLElement>;
+}) {
+  const rect = originRef.current?.getBoundingClientRect();
+  if (!rect) return null;
+
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  return (
+    <AnimatePresence>
+      {[...Array(6)].map((_, i) => (
+        <motion.div
+          key={i}
+          aria-hidden="true"
+          className="pointer-events-none fixed z-[9999] h-1.5 w-1.5 rounded-full bg-ember"
+          style={{ left: centerX, top: centerY }}
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={{
+            scale: [0, 1, 0],
+            x: [0, (i % 2 ? 1 : -1) * (Math.random() * 50 + 20)],
+            y: [0, -Math.random() * 50 - 20],
+          }}
+          transition={{ duration: 0.6, delay: i * 0.1, ease: "easeOut" }}
+        />
+      ))}
+    </AnimatePresence>
+  );
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => (
-    <button ref={ref} className={cn(buttonVariants({ variant, size, className }))} {...props} />
-  )
+  ({ className, variant, size, asChild: _asChild, noParticles, onClick, children, ...props }, ref) => {
+    const innerRef = React.useRef<HTMLButtonElement>(null);
+    React.useImperativeHandle(ref, () => innerRef.current as HTMLButtonElement);
+    const prefersReduced = usePrefersReducedMotion();
+
+    const [show, setShow] = React.useState(false);
+    const [burst, setBurst] = React.useState(0);
+    const timer = React.useRef<ReturnType<typeof setTimeout>>();
+
+    React.useEffect(() => () => clearTimeout(timer.current), []);
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!noParticles && !prefersReduced && !props.disabled) {
+        setShow(true);
+        setBurst((b) => b + 1);
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => setShow(false), 1200);
+      }
+      onClick?.(e);
+    };
+
+    return (
+      <>
+        {show && !noParticles && <SuccessParticles key={burst} originRef={innerRef} />}
+        <button
+          ref={innerRef}
+          onClick={handleClick}
+          className={cn(buttonVariants({ variant, size, className }))}
+          {...props}
+        >
+          {children}
+        </button>
+      </>
+    );
+  }
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants };
+export { Button };

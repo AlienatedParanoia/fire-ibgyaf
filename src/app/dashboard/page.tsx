@@ -11,7 +11,7 @@ import {
   Flame,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InterestsPrompt } from "@/components/interests-prompt";
 import { deadlineUrgency, formatDate, cn } from "@/lib/utils";

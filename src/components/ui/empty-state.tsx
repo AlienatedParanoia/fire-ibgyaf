@@ -1,7 +1,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { Inbox } from "lucide-react";
-import { Button, buttonVariants } from "./button";
+import { Button } from "./button";
+import { buttonVariants } from "./button-variants";
 
 interface EmptyStateProps {
   icon?: React.ReactNode;

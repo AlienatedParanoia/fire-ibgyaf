@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Flame, Home, Search } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 export default function NotFound() {
   return (

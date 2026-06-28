@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Lock, GraduationCap, School, FolderHeart } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { ActivityCard } from "@/components/portfolio/activity-card";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { initials } from "@/lib/utils";
 import type { CustomActivity } from "@/lib/types";
 

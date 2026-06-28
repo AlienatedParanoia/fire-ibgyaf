@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -77,6 +78,21 @@ export function CompetitionsBrowser({
   const [active, setActive] = React.useState<Competition | null>(null);
   const [editing, setEditing] = React.useState<Competition | null>(null);
   const [savingId, setSavingId] = React.useState<string | null>(null);
+
+  // Open a shared/deep-linked competition: /competitions?c=<id> (from share()
+  // and club -> competition links). Handle each id once so closing the dialog
+  // doesn't immediately reopen it.
+  const searchParams = useSearchParams();
+  const handledDeepLink = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const id = searchParams.get("c");
+    if (!id || handledDeepLink.current === id) return;
+    const match = competitions.find((c) => c.id === id);
+    if (match) {
+      handledDeepLink.current = id;
+      setActive(match);
+    }
+  }, [searchParams, competitions]);
 
   const forYou = sort === "foryou";
 

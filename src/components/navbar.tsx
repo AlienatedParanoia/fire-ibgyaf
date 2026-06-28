@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   ListChecks,
   CalendarDays,
-  Settings,
   LogOut,
   Shield,
   Users2,
@@ -139,7 +138,6 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
                     {profile.role === "admin" && (
                       <MenuItem href="/admin" icon={<Shield className="h-4 w-4" />}>Admin Panel</MenuItem>
                     )}
-                    <MenuItem href="/dashboard#settings" icon={<Settings className="h-4 w-4" />}>Settings</MenuItem>
                     <button
                       onClick={logout}
                       className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-rose-50"

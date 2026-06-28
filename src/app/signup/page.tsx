@@ -9,7 +9,12 @@ import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
+import { ShaderBackground } from "@/components/ui/animated-shader-hero";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
+
+const fieldClass =
+  "border-white/20 bg-white/10 text-white placeholder:text-white/40 focus-visible:ring-white/50 focus-visible:ring-offset-transparent";
+const labelClass = "text-white/90";
 
 const GRADE_GROUPS: { label: string; options: string[] }[] = [
   {
@@ -67,21 +72,26 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="container flex min-h-[calc(100vh-4rem)] items-center justify-center py-12">
+    <div className="relative isolate flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-4 py-12">
+      {/* Animated shader background */}
+      <ShaderBackground className="absolute inset-0 -z-20" />
+      {/* Darkening veil to keep the form readable over the shader */}
+      <div className="absolute inset-0 -z-10 bg-black/40" aria-hidden="true" />
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
         <div className="mb-6 flex flex-col items-center text-center">
-          <Logo />
-          <h1 className="mt-5 font-heading text-2xl font-bold text-charcoal">Create your account</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <Logo variant="light" />
+          <h1 className="mt-5 font-heading text-2xl font-bold text-white">Create your account</h1>
+          <p className="mt-1 text-sm text-white/70">
             Free forever. Start finding opportunities in seconds.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-charcoal/10 bg-white p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
           {!isSupabaseConfigured && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               Supabase isn&apos;t configured yet — add keys to <code>.env.local</code> to enable sign up.
@@ -89,32 +99,39 @@ export default function SignupPage() {
           )}
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="full_name">Full name</Label>
+              <Label htmlFor="full_name" className={labelClass}>Full name</Label>
               <Input
                 id="full_name"
                 required
                 placeholder="Tan Wei Jie"
+                className={fieldClass}
                 value={form.full_name}
                 onChange={(e) => update("full_name", e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="school">School</Label>
+              <Label htmlFor="school" className={labelClass}>School</Label>
               <Input
                 id="school"
                 required
                 placeholder="Raffles Institution"
+                className={fieldClass}
                 value={form.school}
                 onChange={(e) => update("school", e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="grade">Grade / Level</Label>
-              <Select id="grade" value={form.grade} onChange={(e) => update("grade", e.target.value)}>
+              <Label htmlFor="grade" className={labelClass}>Grade / Level</Label>
+              <Select
+                id="grade"
+                className={fieldClass}
+                value={form.grade}
+                onChange={(e) => update("grade", e.target.value)}
+              >
                 {GRADE_GROUPS.map((group) => (
-                  <optgroup key={group.label} label={group.label}>
+                  <optgroup key={group.label} label={group.label} className="text-ink">
                     {group.options.map((g) => (
-                      <option key={g} value={g}>
+                      <option key={g} value={g} className="text-ink">
                         {g}
                       </option>
                     ))}
@@ -123,23 +140,25 @@ export default function SignupPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className={labelClass}>Email</Label>
               <Input
                 id="email"
                 type="email"
                 required
                 placeholder="you@school.edu.sg"
+                className={fieldClass}
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className={labelClass}>Password</Label>
               <Input
                 id="password"
                 type="password"
                 required
                 placeholder="At least 6 characters"
+                className={fieldClass}
                 value={form.password}
                 onChange={(e) => update("password", e.target.value)}
               />
@@ -149,7 +168,7 @@ export default function SignupPage() {
               {loading ? "Creating account…" : "Create free account"}
             </Button>
           </form>
-          <p className="mt-5 text-center text-sm text-muted-foreground">
+          <p className="mt-5 text-center text-sm text-white/70">
             Already have an account?{" "}
             <Link href="/login" className="font-medium text-fire hover:underline">
               Log in

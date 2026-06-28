@@ -57,6 +57,10 @@ export default function LandingPaginatedPage() {
     let raf = 0;
     let to = 0;
     let cancelled = false;
+    const reduce =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // Dynamically recolour the hero copy each frame so the animated shader never
     // washes it out: sample the luminance directly behind each text element and
@@ -111,9 +115,13 @@ export default function LandingPaginatedPage() {
           el.style.textShadow =
             s > 0.45 ? "0 0 9px rgba(0,0,0,.6)" : "0 1px 10px rgba(250,249,245,.3)";
         }
-        raf = requestAnimationFrame(() => {
-          to = window.setTimeout(tick, 60);
-        });
+        // Under reduced motion the shader is a single static frame, so one
+        // pass suffices — don't loop continuous GPU readbacks.
+        if (!reduce) {
+          raf = requestAnimationFrame(() => {
+            to = window.setTimeout(tick, 60);
+          });
+        }
       };
       tick();
     };

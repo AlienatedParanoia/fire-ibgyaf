@@ -54,16 +54,23 @@ export default function SignupPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/login`,
         data: { full_name: form.full_name, school: form.school, grade: form.grade },
       },
     });
     setLoading(false);
     if (error) {
       toast.error(error.message);
+      return;
+    }
+    // When "Confirm email" is enabled (Supabase default), signUp succeeds with
+    // no session — the user must click the email link before they can log in.
+    if (!data.session) {
+      toast.success("Almost there — check your email to confirm your account.");
       return;
     }
     toast.success("Account created! Welcome to F.I.R.E 🔥");

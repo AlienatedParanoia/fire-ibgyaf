@@ -77,6 +77,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const innerRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => innerRef.current as HTMLButtonElement);
     const prefersReduced = usePrefersReducedMotion();
+    // No celebratory burst on destructive actions (Delete/Remove/Reject).
+    const particlesOff = noParticles || variant === "destructive";
 
     const [show, setShow] = React.useState(false);
     const [burst, setBurst] = React.useState(0);
@@ -85,7 +87,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     React.useEffect(() => () => clearTimeout(timer.current), []);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!noParticles && !prefersReduced && !props.disabled) {
+      if (!particlesOff && !prefersReduced && !props.disabled) {
         setShow(true);
         setBurst((b) => b + 1);
         clearTimeout(timer.current);
@@ -96,7 +98,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <>
-        {show && !noParticles && <SuccessParticles key={burst} originRef={innerRef} />}
+        {show && !particlesOff && <SuccessParticles key={burst} originRef={innerRef} />}
         <button
           ref={innerRef}
           onClick={handleClick}

@@ -6,13 +6,26 @@
   "srcDir": "src/components",
   "tsconfig": "./tsconfig.json",
   "cssEntry": "./ds-tailwind-compiled.css",
+  "readmeHeader": ".design-sync/conventions.md",
   "runtimeFontPrefixes": ["Newsreader", "Hanken Grotesk", "Caveat"],
   "componentSrcMap": {
     "Navbar": null,
     "MenuItem": null,
     "Dialog": null,
     "RevealSection": null,
-    "PageTransition": null
+    "PageTransition": null,
+    "Component": null,
+    "SuccessParticles": null,
+    "HideOnAuthRoutes": null,
+    "RouteLoader": null
+  },
+  "overrides": {
+    "InterestsDialog": { "cardMode": "single", "viewport": "560x600" },
+    "ClubMembersDialog": { "cardMode": "single", "viewport": "560x600" },
+    "UserEditDialog": { "cardMode": "single", "viewport": "720x840" },
+    "ClubFormDialog": { "cardMode": "single", "viewport": "560x640" },
+    "CompetitionFormDialog": { "cardMode": "single", "viewport": "560x720" },
+    "LandingExperience": { "cardMode": "column" }
   },
   "libOverrides": {
     "bundle.mjs": "add process shim banner so Next.js + Supabase don't throw ReferenceError: process is not defined in browser preview"

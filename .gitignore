@@ -24,3 +24,6 @@ next-env.d.ts
 # design handoff inputs (already implemented)
 /design_handoff_*/
 *.zip
+
+# design-sync: regenerated each sync (see .design-sync/NOTES.md)
+ds-tailwind-compiled.css

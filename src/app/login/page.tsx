@@ -15,6 +15,20 @@ export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
 
+  // /auth/confirm redirects here with ?error=… when a confirmation link is
+  // expired, already used, or missing its token — otherwise those failures are
+  // silent. Read it straight off the URL rather than via useSearchParams so the
+  // page needs no Suspense boundary, then strip it so a refresh won't re-toast.
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("error");
+    if (!message) return;
+    toast.error(message);
+    params.delete("error");
+    const query = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (query ? `?${query}` : ""));
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const supabase = getSupabaseBrowser();

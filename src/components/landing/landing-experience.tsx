@@ -51,7 +51,7 @@ const FEATURES: Feature[] = [
           <path d="M105 92 L108.5 101.5 L118 105 L108.5 108.5 L105 118 L101.5 108.5 L92 105 L101.5 101.5 Z" fill="#FAF9F5"/>
         </svg>
       </div>
-      <span class="ed-cap">discover · 240 live</span>`,
+      <span class="ed-cap">discover · live now</span>`,
   },
   {
     n: "02",
@@ -412,13 +412,7 @@ export function LandingExperience() {
               <Link className="ed-btn" href="/signup" style={{ display: "inline-flex", alignItems: "center", height: 54, padding: "0 26px", borderRadius: 100, fontSize: 16, fontWeight: 700, background: "transparent", color: "#020202", border: "1.5px solid #020202", textDecoration: "none" }}>Sign up free</Link>
             </div>
             <div className="r-up" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 22, marginTop: 38, transitionDelay: ".28s" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "50%", background: "#F75C4C", color: "#fff", fontSize: 12, fontWeight: 700, border: "2px solid #FAF9F5" }}>SY</span>
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "50%", background: "#2F6090", color: "#fff", fontSize: 12, fontWeight: 700, border: "2px solid #FAF9F5", marginLeft: -9 }}>RK</span>
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "50%", background: "#020202", color: "#FFD25E", fontSize: 12, fontWeight: 700, border: "2px solid #FAF9F5", marginLeft: -9 }}>AL</span>
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "50%", background: "#E3DBD0", color: "#44413B", fontSize: 11, fontWeight: 700, border: "2px solid #FAF9F5", marginLeft: -9 }}>+9</span>
-              </div>
-              <div style={{ fontSize: 14.5, color: "#837D70", lineHeight: 1.35 }}>Joined by students across<br /><span style={{ color: "#020202", fontWeight: 600 }}>14 Singapore schools</span></div>
+              <div style={{ fontSize: 14.5, color: "#837D70", lineHeight: 1.35 }}>Affiliated with<br /><span style={{ color: "#020202", fontWeight: 600 }}>Global Indian International School</span></div>
             </div>
           </div>
           <div className="ed-collage" style={{ position: "relative", height: 520 }} dangerouslySetInnerHTML={{ __html: HERO_COLLAGE_HTML }} />
@@ -439,11 +433,13 @@ export function LandingExperience() {
 
       {/* STATS */}
       <section data-reveal style={{ maxWidth: 1240, margin: "0 auto", padding: "74px 28px 30px" }}>
-        <div className="ed-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 28 }}>
-          <Stat value="240" label="competitions tracked" color="#020202" />
-          <Stat value="62" label="clubs across schools" color="#F75C4C" delay=".08s" />
-          <Stat value="14" label="Singapore schools" color="#2F6090" delay=".16s" />
-          <Stat value="$0" label="forever — non-profit" color="#020202" delay=".24s" static />
+        {/* Only claims we can stand behind. The 300+ figure is a projection of
+            who we're built to serve, not a count of anyone already signed up —
+            `static` because countUp() would parse "300+" and drop the plus. */}
+        <div className="ed-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
+          <Stat value="300+" label="students we aim to help" color="#020202" static />
+          <Stat value="GIIS" label="our affiliated school" color="#2F6090" delay=".08s" static />
+          <Stat value="$0" label="forever — non-profit" color="#F75C4C" delay=".16s" static />
         </div>
       </section>
 

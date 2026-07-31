@@ -4,10 +4,18 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Flame } from "lucide-react";
+import { Loader2, Flame, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
+
+/**
+ * Where Supabase sends people after they click the link in the confirmation
+ * email. Must point at the /auth/confirm route handler — it is what turns the
+ * token in the link into a session cookie. This exact URL also has to be on the
+ * Redirect URLs allow-list in the Supabase dashboard or Supabase ignores it.
+ */
+const confirmRedirectUrl = () => `${window.location.origin}/auth/confirm?next=/dashboard`;
 
 const GRADE_GROUPS: { label: string; options: string[] }[] = [
   {
@@ -23,6 +31,10 @@ const GRADE_GROUPS: { label: string; options: string[] }[] = [
 export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
+  const [resending, setResending] = React.useState(false);
+  // Set once signup succeeds but Supabase withheld a session pending email
+  // confirmation. Swaps the form for the "check your inbox" panel.
+  const [pendingEmail, setPendingEmail] = React.useState<string | null>(null);
   const [form, setForm] = React.useState({
     full_name: "",
     school: "",
@@ -51,7 +63,7 @@ export default function SignupPage() {
       email: form.email,
       password: form.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: confirmRedirectUrl(),
         data: { full_name: form.full_name, school: form.school, grade: form.grade },
       },
     });
@@ -60,15 +72,42 @@ export default function SignupPage() {
       toast.error(error.message);
       return;
     }
-    // When "Confirm email" is enabled (Supabase default), signUp succeeds with
-    // no session — the user must click the email link before they can log in.
+    // Email-enumeration protection (on by default) makes signUp report success
+    // for an address that already has an account — no error, and crucially no
+    // email is sent. The giveaway is an empty identities array. Without this
+    // check the UI promises a confirmation mail that will never arrive.
+    if (!data.session && data.user?.identities?.length === 0) {
+      toast.error("That email already has an account. Try logging in instead.");
+      return;
+    }
+    // With "Confirm email" enabled, signUp succeeds with no session — the user
+    // must click the emailed link before they can log in.
     if (!data.session) {
-      toast.success("Almost there — check your email to confirm your account.");
+      setPendingEmail(form.email);
       return;
     }
     toast.success("Account created! Welcome to F.I.R.E 🔥");
     router.push("/dashboard");
     router.refresh();
+  }
+
+  async function onResend() {
+    const supabase = getSupabaseBrowser();
+    if (!supabase || !pendingEmail) return;
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: { emailRedirectTo: confirmRedirectUrl() },
+    });
+    setResending(false);
+    if (error) {
+      // Surfaces the real reason rather than failing silently — most often
+      // Supabase's built-in SMTP rate limit, which is a few sends per hour.
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Sent again — give it a minute, and check spam.");
   }
 
   return (
@@ -92,6 +131,36 @@ export default function SignupPage() {
               Supabase isn&apos;t configured yet — add keys to <code>.env.local</code> to enable sign up.
             </div>
           )}
+          {pendingEmail ? (
+            <div className="text-center">
+              <MailCheck className="mx-auto h-10 w-10 text-coral" strokeWidth={1.5} />
+              <h2 className="mt-3 font-heading text-xl font-semibold text-ink">
+                Confirm your email
+              </h2>
+              <p className="mt-2 text-sm text-ink-soft">
+                We sent a confirmation link to{" "}
+                <span className="font-medium text-ink">{pendingEmail}</span>. Click it and
+                you&apos;ll be signed in. Check your spam folder if it hasn&apos;t arrived.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-5 w-full"
+                onClick={onResend}
+                disabled={resending}
+                noParticles
+              >
+                {resending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {resending ? "Resending…" : "Resend confirmation email"}
+              </Button>
+              <p className="mt-5 text-sm text-ink-soft">
+                <Link href="/login" className="font-medium text-coral hover:underline">
+                  Back to log in
+                </Link>
+              </p>
+            </div>
+          ) : (
+            <>
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <Label htmlFor="full_name">Full name</Label>
@@ -164,6 +233,8 @@ export default function SignupPage() {
               Log in
             </Link>
           </p>
+            </>
+          )}
         </div>
       </div>
     </div>

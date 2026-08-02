@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -31,14 +32,24 @@ export function getSupabaseServer() {
   });
 }
 
-/** Convenience: fetch the current auth user + profile, or null. */
-export async function getCurrentUser() {
+/**
+ * Convenience: fetch the current auth user + profile, or null.
+ * Cached per render — the root layout and every guarded page ask for the same
+ * user, and each call would otherwise be two more round-trips before paint.
+ */
+export const getCurrentUser = cache(async () => {
   const supabase = getSupabaseServer();
   if (!supabase) return { authUser: null, profile: null, supabase: null };
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { authUser: null, profile: null, supabase };
-  const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single();
-  return { authUser: user, profile, supabase };
-}
+  if (!user) return { authUser: null, profile: null, supabase, profileError: null };
+  // maybeSingle so a genuinely absent profile comes back as null rather than an
+  // error: callers end the session for the former and must not for the latter.
+  const { data: profile, error: profileError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+  return { authUser: user, profile, supabase, profileError };
+});

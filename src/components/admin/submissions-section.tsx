@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { SectionHeading } from "./users-section";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, safeHttpUrl } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { CommunitySubmission, SubmissionStatus } from "@/lib/types";
 
@@ -19,63 +19,107 @@ const STATUS_STYLE: Record<SubmissionStatus, string> = {
   rejected: "bg-rose-100 text-rose-700",
 };
 
-export function SubmissionsSection({ submissions: initial }: { submissions: CommunitySubmission[] }) {
+export function SubmissionsSection({
+  submissions: initial,
+  onChanged,
+}: {
+  submissions: CommunitySubmission[];
+  onChanged?: () => void;
+}) {
   const [subs, setSubs] = React.useState(initial);
   const [filter, setFilter] = React.useState<SubmissionStatus | "">("pending");
+  const [pending, setPending] = React.useState<string | null>(null);
 
   const filtered = filter ? subs.filter((s) => s.status === filter) : subs;
 
   async function approve(s: CommunitySubmission) {
     const supabase = getSupabaseBrowser();
     if (!supabase) return toast.error("Supabase not configured.");
+    if (pending === s.id) return;
+    setPending(s.id);
 
     // 1. create the real record
+    const table = s.type === "competition" ? "competitions" : "clubs";
+    let createdId: string | null = null;
     let err = null;
     if (s.type === "competition") {
-      const { error } = await supabase.from("competitions").insert({
-        title: s.title,
-        description: s.description,
-        category: s.category,
-        organizer: s.organizer,
-        deadline: s.deadline,
-        eligibility: s.eligibility,
-        registration_link: s.registration_link,
-        region: "Singapore",
-        format: "online",
-        is_approved: true,
-      });
+      const { data, error } = await supabase
+        .from("competitions")
+        .insert({
+          title: s.title,
+          description: s.description,
+          category: s.category,
+          organizer: s.organizer,
+          deadline: s.deadline,
+          eligibility: s.eligibility,
+          registration_link: s.registration_link,
+          region: "Singapore",
+          format: "online",
+          is_approved: true,
+        })
+        .select("id")
+        .single();
+      createdId = data?.id ?? null;
       err = error;
     } else {
-      const { error } = await supabase.from("clubs").insert({
-        name: s.title,
-        description: s.description,
-        category: s.category,
-        contact_email: s.submitted_by_email,
-        contact_person: s.submitted_by_name,
-        is_approved: true,
-      });
+      const { data, error } = await supabase
+        .from("clubs")
+        .insert({
+          name: s.title,
+          description: s.description,
+          category: s.category,
+          contact_email: s.submitted_by_email,
+          contact_person: s.submitted_by_name,
+          is_approved: true,
+        })
+        .select("id")
+        .single();
+      createdId = data?.id ?? null;
       err = error;
     }
-    if (err) return toast.error(err.message);
+    if (err) { setPending(null); return toast.error(err.message); }
 
-    // 2. mark the submission approved
-    await supabase.from("community_submissions").update({ status: "approved" }).eq("id", s.id);
+    // 2. mark the submission approved — if that fails the new record has to go
+    // back, otherwise approving again would publish a second copy.
+    const { error: statusErr } = await supabase
+      .from("community_submissions")
+      .update({ status: "approved" })
+      .eq("id", s.id);
+    if (statusErr) {
+      const undo = createdId ? await supabase.from(table).delete().eq("id", createdId) : null;
+      setPending(null);
+      return toast.error(
+        undo?.error
+          ? `${statusErr.message} — the new ${s.type} is live, remove it by hand before retrying.`
+          : statusErr.message
+      );
+    }
+
     setSubs((list) => list.map((x) => (x.id === s.id ? { ...x, status: "approved" } : x)));
     toast.success(`Approved — ${s.type} is now live 🎉`);
+    setPending(null);
+    onChanged?.();
   }
 
   async function reject(s: CommunitySubmission) {
     const supabase = getSupabaseBrowser();
     if (!supabase) return toast.error("Supabase not configured.");
-    const note = window.prompt("Reason for rejection (optional):") ?? null;
-    await supabase
+    if (pending === s.id) return;
+    const note = window.prompt("Reason for rejection (optional):");
+    if (note === null) return;
+    const notes = note.trim() || null;
+    setPending(s.id);
+    const { error } = await supabase
       .from("community_submissions")
-      .update({ status: "rejected", admin_notes: note })
+      .update({ status: "rejected", admin_notes: notes })
       .eq("id", s.id);
+    if (error) { setPending(null); return toast.error(error.message); }
     setSubs((list) =>
-      list.map((x) => (x.id === s.id ? { ...x, status: "rejected", admin_notes: note } : x))
+      list.map((x) => (x.id === s.id ? { ...x, status: "rejected", admin_notes: notes } : x))
     );
     toast.success("Submission rejected");
+    setPending(null);
+    onChanged?.();
   }
 
   return (
@@ -120,16 +164,7 @@ export function SubmissionsSection({ submissions: initial }: { submissions: Comm
                       <Mail className="h-3 w-3" /> {s.submitted_by_name} · {s.submitted_by_email}
                     </span>
                     {s.deadline && <span>Deadline {formatDate(s.deadline)}</span>}
-                    {s.registration_link && (
-                      <a
-                        href={s.registration_link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1 text-electric hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" /> Link
-                      </a>
-                    )}
+                    {s.registration_link && <SubmittedLink url={s.registration_link} />}
                   </p>
                   {s.admin_notes && (
                     <p className="mt-1 text-xs italic text-rose-600">Note: {s.admin_notes}</p>
@@ -137,10 +172,15 @@ export function SubmissionsSection({ submissions: initial }: { submissions: Comm
                 </div>
                 {s.status === "pending" && (
                   <div className="flex shrink-0 gap-2">
-                    <Button size="sm" onClick={() => approve(s)}>
+                    <Button size="sm" onClick={() => approve(s)} disabled={pending === s.id}>
                       <Check className="h-4 w-4" /> Approve
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => reject(s)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => reject(s)}
+                      disabled={pending === s.id}
+                    >
                       <X className="h-4 w-4" /> Reject
                     </Button>
                   </div>
@@ -151,5 +191,31 @@ export function SubmissionsSection({ submissions: initial }: { submissions: Comm
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The link comes straight from the submission form, so a `javascript:` URL would
+ * run in the admin's own session on click. Anything that is not http(s) is shown
+ * as plain text — the admin still has to read it to judge the submission.
+ */
+function SubmittedLink({ url }: { url: string }) {
+  const safe = safeHttpUrl(url);
+  if (!safe) {
+    return (
+      <span className="flex items-center gap-1 break-all text-muted-foreground">
+        <ExternalLink className="h-3 w-3 shrink-0" /> {url}
+      </span>
+    );
+  }
+  return (
+    <a
+      href={safe}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-1 text-electric hover:underline"
+    >
+      <ExternalLink className="h-3 w-3" /> Link
+    </a>
   );
 }

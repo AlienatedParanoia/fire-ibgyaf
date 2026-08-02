@@ -1,25 +1,57 @@
+import { cache } from "react";
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Mail, User, Calendar, Users2, ArrowLeft, CalendarClock } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { JoinClubButton } from "@/components/clubs/join-club-button";
-import { deadlineUrgency, formatDate, cn } from "@/lib/utils";
+import { deadlineUrgency, formatDate, cn, optimizableImage } from "@/lib/utils";
 import type { Club, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-async function getClub(id: string) {
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://projectfire.dev";
+
+// Cached so generateMetadata and the page itself share one pair of queries.
+const getClub = cache(async (id: string) => {
   const supabase = getSupabaseServer();
   if (!supabase) return { club: null as Club | null, comps: [] as Competition[] };
-  const { data: club } = await supabase.from("clubs").select("*").eq("id", id).maybeSingle();
-  const { data: comps } = await supabase
-    .from("competitions")
-    .select("*")
-    .eq("club_id", id)
-    .eq("is_approved", true)
-    .order("deadline", { ascending: true });
+  const [{ data: club }, { data: comps }] = await Promise.all([
+    supabase.from("clubs").select("*").eq("id", id).maybeSingle(),
+    supabase
+      .from("competitions")
+      .select("*")
+      .eq("club_id", id)
+      .eq("is_approved", true)
+      .order("deadline", { ascending: true }),
+  ]);
   return { club: club as Club | null, comps: (comps ?? []) as Competition[] };
+});
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const { club } = await getClub(params.id);
+  if (!club) return { title: "Club not found — F.I.R.E" };
+
+  const title = `${club.name} — F.I.R.E`;
+  const description = club.description
+    ? club.description.replace(/\s+/g, " ").trim().slice(0, 155)
+    : `${club.name} on F.I.R.E — meeting times, contacts, and the competitions this club runs.`;
+  const url = `${SITE_URL}/clubs/${club.id}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      images: club.banner_url ? [club.banner_url] : undefined,
+    },
+  };
 }
 
 export default async function ClubDetailPage({ params }: { params: { id: string } }) {
@@ -30,8 +62,15 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
     <div>
       <div className="relative h-48 bg-gradient-to-br from-fire to-electric sm:h-60">
         {club.banner_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={club.banner_url} alt="" className="h-full w-full object-cover" />
+          <Image
+            src={club.banner_url}
+            alt=""
+            fill
+            sizes="100vw"
+            priority
+            unoptimized={!optimizableImage(club.banner_url)}
+            className="object-cover"
+          />
         )}
         <div className="absolute inset-0 bg-charcoal/20" />
       </div>

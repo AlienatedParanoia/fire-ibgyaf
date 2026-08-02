@@ -16,8 +16,9 @@ type FormState = {
   organizer: string;
   description: string;
   category: string;
-  format: CompFormat;
-  region: CompRegion;
+  // "" is the "Not specified" option — both columns are nullable in SQL.
+  format: CompFormat | "";
+  region: CompRegion | "";
   deadline: string;
   event_date: string;
   eligibility: string;
@@ -42,7 +43,7 @@ function fromCompetition(c: Competition): FormState {
   return {
     title: c.title, organizer: c.organizer ?? "",
     description: c.description ?? "", category: c.category ?? "",
-    format: c.format, region: c.region,
+    format: c.format ?? "", region: c.region ?? "",
     deadline: c.deadline?.split("T")[0] ?? "",
     event_date: c.event_date?.split("T")[0] ?? "",
     eligibility: c.eligibility ?? "",
@@ -95,8 +96,8 @@ export function CompetitionFormDialog({
       organizer: form.organizer || null,
       description: form.description || null,
       category: form.category || null,
-      format: form.format,
-      region: form.region,
+      format: form.format || null,
+      region: form.region || null,
       deadline: form.deadline || null,
       event_date: form.event_date || null,
       eligibility: form.eligibility || null,
@@ -148,6 +149,7 @@ export function CompetitionFormDialog({
         <div>
           <Label>Format</Label>
           <Select value={form.format} onChange={set("format")}>
+            <option value="">Not specified</option>
             <option value="online">Online</option>
             <option value="onsite">Onsite</option>
             <option value="hybrid">Hybrid</option>
@@ -156,6 +158,7 @@ export function CompetitionFormDialog({
         <div>
           <Label>Region</Label>
           <Select value={form.region} onChange={set("region")}>
+            <option value="">Not specified</option>
             <option value="Singapore">Singapore</option>
             <option value="Global">Global</option>
             <option value="Both">Both</option>

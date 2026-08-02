@@ -17,11 +17,13 @@ export function ParticipationSection({
   users,
   competitions,
   clubs,
+  onChanged,
 }: {
   participation: Participation[];
   users: AppUser[];
   competitions: Competition[];
   clubs: Club[];
+  onChanged?: () => void;
 }) {
   const [rows, setRows] = React.useState(initial);
   const [q, setQ] = React.useState("");
@@ -61,7 +63,10 @@ export function ParticipationSection({
     if (error) {
       toast.error(error.message);
       setRows((l) => l.map((x) => (x.id === p.id ? { ...x, status: p.status } : x)));
-    } else toast.success("Status updated");
+    } else {
+      toast.success("Status updated");
+      onChanged?.();
+    }
   }
 
   async function remove(p: Participation) {
@@ -74,6 +79,7 @@ export function ParticipationSection({
     setRows((l) => l.filter((x) => x.id !== p.id));
     toast.success("Deleted");
     setDeleting(null);
+    onChanged?.();
   }
 
   return (

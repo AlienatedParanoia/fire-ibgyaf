@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2, UserPlus, UserCheck, Users, GraduationCap } from "lucide-react";
+import { Loader2, UserPlus, UserCheck, Users, GraduationCap, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -32,15 +32,19 @@ export function TeammatesPanel({
   const [list, setList] = React.useState<Teammate[]>([]);
   const [uid, setUid] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [failed, setFailed] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [message, setMessage] = React.useState("");
 
   const load = React.useCallback(async () => {
     const supabase = getSupabaseBrowser();
-    if (!supabase) { setLoading(false); return; }
+    if (!supabase) { setFailed(true); setLoading(false); return; }
+    setLoading(true);
     const { data: auth } = await supabase.auth.getUser();
     setUid(auth.user?.id ?? null);
     const { data, error } = await supabase.rpc("competition_teammates", { comp: competitionId });
+    // A failed read must not masquerade as "nobody is looking yet".
+    setFailed(!!error);
     if (!error) setList((data ?? []) as Teammate[]);
     setLoading(false);
   }, [competitionId]);
@@ -125,6 +129,13 @@ export function TeammatesPanel({
         <p className="mt-3 flex items-center gap-2 text-sm text-ink-faint">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </p>
+      ) : failed ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-ink-faint">Couldn&apos;t load the teammate list.</p>
+          <Button variant="sketch" size="sm" onClick={load}>
+            <RotateCcw className="h-4 w-4" /> Try again
+          </Button>
+        </div>
       ) : others.length === 0 ? (
         <p className="mt-3 text-sm text-ink-faint">
           {mine ? "No one else is looking yet — you're first!" : "No one is looking for teammates yet. Be the first."}

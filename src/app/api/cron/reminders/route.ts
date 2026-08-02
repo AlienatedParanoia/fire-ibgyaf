@@ -7,6 +7,16 @@ export const runtime = "nodejs";
 // Lead-times (days before deadline) at which we remind a student.
 const BUCKETS = [7, 3, 1];
 
+/** Names and titles are user-editable, so nothing reaches the email markup raw. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /**
  * Daily cron (see vercel.json). For each saved/registered competition whose
  * deadline is 7, 3, or 1 days out, sends one reminder: an in-app notification
@@ -26,11 +36,12 @@ export async function GET(req: NextRequest) {
 
   const resendKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.REMINDER_FROM_EMAIL || "F.I.R.E <onboarding@resend.dev>";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://fire-ibgyaf.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://projectfire.dev";
 
   let processed = 0;
   let emailed = 0;
   let skipped = 0;
+  let failed = 0;
 
   const now = new Date();
 
@@ -46,30 +57,53 @@ export async function GET(req: NextRequest) {
       .in("status", ["interested", "registered"])
       .eq("competitions.deadline", targetStr);
 
-    if (error || !rows) continue;
+    if (error || !rows) {
+      failed++;
+      continue;
+    }
 
     for (const r of rows as Array<Record<string, unknown>>) {
       const comp = r.competitions as { id: string; title: string; deadline: string };
       const usr = r.users as { email: string | null; full_name: string | null; email_reminders: boolean };
 
-      // Claim this (participation, bucket) — unique constraint blocks duplicates.
+      // Claim this (participation, bucket) first — the unique constraint is the
+      // only thing serialising overlapping runs, so it has to land before any
+      // send. Released again below if the notification never makes it.
       const { error: claimErr } = await admin
         .from("reminders_sent")
         .insert({ participation_id: r.id as string, days_before: bucket });
-      if (claimErr) { skipped++; continue; }
+      if (claimErr) {
+        // 23505 is the dedup constraint doing its job; any other code is a fault.
+        if (claimErr.code === "23505") skipped++;
+        else failed++;
+        continue;
+      }
 
-      processed++;
       const title = `${bucket} day${bucket === 1 ? "" : "s"} left: ${comp.title}`;
       const body = `Registration for ${comp.title} closes on ${comp.deadline}.`;
       const link = `/competitions?c=${comp.id}`;
 
-      await admin.from("notifications").insert({
+      const { error: notifyErr } = await admin.from("notifications").insert({
         user_id: r.user_id as string,
         type: "deadline",
         title,
         body,
         link,
       });
+
+      if (notifyErr) {
+        // Nothing was delivered, and this bucket only matches today — drop the
+        // claim so a re-run today still has a chance to deliver it.
+        await admin
+          .from("reminders_sent")
+          .delete()
+          .eq("participation_id", r.id as string)
+          .eq("days_before", bucket);
+        failed++;
+        continue;
+      }
+
+      processed++;
 
       if (resendKey && usr.email_reminders && usr.email) {
         try {
@@ -81,9 +115,9 @@ export async function GET(req: NextRequest) {
               to: usr.email,
               subject: title,
               html:
-                `<p>Hi ${usr.full_name || "there"},</p>` +
-                `<p>${body}</p>` +
-                `<p><a href="${siteUrl}${link}">View competition &rarr;</a></p>` +
+                `<p>Hi ${escapeHtml(usr.full_name || "there")},</p>` +
+                `<p>${escapeHtml(body)}</p>` +
+                `<p><a href="${escapeHtml(siteUrl + link)}">View competition &rarr;</a></p>` +
                 `<p style="color:#888;font-size:12px">You're getting this because you saved this competition on F.I.R.E. ` +
                 `Manage reminders from the notification bell.</p>`,
             }),
@@ -96,5 +130,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed, emailed, skipped });
+  // A run that quietly delivered nothing must not look like a run with nothing due.
+  return NextResponse.json(
+    { ok: failed === 0, processed, emailed, skipped, failed },
+    { status: failed === 0 ? 200 : 500 }
+  );
 }

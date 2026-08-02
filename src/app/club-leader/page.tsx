@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
-import { ClubLeaderDashboard } from "@/components/club-leader/club-leader-dashboard";
-import type { Club, Competition, AppUser } from "@/lib/types";
+import { ClubLeaderDashboard, type ClubMember } from "@/components/club-leader/club-leader-dashboard";
+import type { Club, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +20,15 @@ export default async function ClubLeaderPage() {
     .eq("submitted_by", uid)
     .order("created_at", { ascending: false });
 
-  let members: AppUser[] = [];
+  let members: ClubMember[] = [];
+  let membersFailed = false;
   if (club) {
-    const { data: parts } = await supabase
-      .from("participation")
-      .select("user_id, users(*)")
-      .eq("club_id", (club as Club).id);
-    members = (parts ?? [])
-      .map((p: { users: AppUser | AppUser[] | null }) =>
-        Array.isArray(p.users) ? p.users[0] : p.users
-      )
-      .filter((u): u is AppUser => !!u);
+    // Joining users(*) stays hidden by the "users read own or admin" policy, so
+    // the roster comes from a definer RPC scoped to this club's leader.
+    const { data, error } = await supabase.rpc("club_members", { club: (club as Club).id });
+    // A failed read must not render as a club nobody has joined.
+    membersFailed = !!error;
+    members = (data ?? []) as ClubMember[];
   }
 
   return (
@@ -46,6 +44,7 @@ export default async function ClubLeaderPage() {
         initialClub={(club as Club) ?? null}
         initialComps={(comps ?? []) as Competition[]}
         members={members}
+        membersFailed={membersFailed}
       />
     </div>
   );

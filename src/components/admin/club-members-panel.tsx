@@ -24,11 +24,13 @@ export function ClubMembersDialog({
   onClose,
   club,
   users,
+  onChanged,
 }: {
   open: boolean;
   onClose: () => void;
   club: Club | null;
   users: AppUser[];
+  onChanged?: () => void;
 }) {
   const [members, setMembers] = React.useState<MemberRow[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -69,6 +71,7 @@ export function ClubMembersDialog({
     await load();
     setBusy(false);
     toast.success("Member added");
+    onChanged?.();
   }
 
   async function remove(row: MemberRow) {
@@ -78,6 +81,7 @@ export function ClubMembersDialog({
     const { error } = await supabase.from("participation").delete().eq("id", row.id);
     if (error) { toast.error(error.message); load(); return; }
     toast.success("Member removed");
+    onChanged?.();
   }
 
   return (

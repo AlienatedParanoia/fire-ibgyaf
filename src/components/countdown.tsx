@@ -3,6 +3,17 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Postgres `date` columns arrive as a bare "YYYY-MM-DD", which `new Date()`
+ * reads as midnight UTC — the timer would hit zero mid-morning here. A day
+ * without a time means the student has until the end of that day, locally.
+ */
+function deadlineTime(deadline: string): number {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(deadline.trim());
+  if (!parts) return new Date(deadline).getTime();
+  return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), 23, 59, 59, 999).getTime();
+}
+
 /** Reusable deadline countdown timer (days / hours / minutes / seconds). */
 export function Countdown({ deadline, className }: { deadline: string | null; className?: string }) {
   const [now, setNow] = React.useState(() => Date.now());
@@ -14,7 +25,7 @@ export function Countdown({ deadline, className }: { deadline: string | null; cl
 
   if (!deadline) return <span className={cn("text-sm text-muted-foreground", className)}>No deadline</span>;
 
-  const target = new Date(deadline).getTime();
+  const target = deadlineTime(deadline);
   const diff = target - now;
 
   if (Number.isNaN(target)) return null;

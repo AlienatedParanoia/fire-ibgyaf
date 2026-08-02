@@ -17,10 +17,12 @@ export function ApprovalsSection({
   kind,
   competitions,
   clubs,
+  onChanged,
 }: {
   kind: Kind;
   competitions?: Competition[];
   clubs?: Club[];
+  onChanged?: () => void;
 }) {
   const [comps, setComps] = React.useState((competitions ?? []).filter((c) => !c.is_approved));
   const [clubList, setClubList] = React.useState((clubs ?? []).filter((c) => !c.is_approved));
@@ -33,9 +35,9 @@ export function ApprovalsSection({
       kind === "competition" ? { is_approved: true, is_featured: featured } : { is_approved: true };
     const { error } = await supabase.from(table).update(patch).eq("id", id);
     if (error) return toast.error(error.message);
-    if (kind === "competition") setComps((l) => l.filter((c) => c.id !== id));
-    else setClubList((l) => l.filter((c) => c.id !== id));
+    drop(id);
     toast.success(`Approved${featured ? " & featured" : ""}`);
+    onChanged?.();
   }
 
   async function reject(id: string) {
@@ -43,11 +45,32 @@ export function ApprovalsSection({
     if (!supabase) return toast.error("Supabase not configured.");
     const note = window.prompt("Optional note for rejection (the item will be removed):");
     if (note === null) return;
+
+    // The list is a snapshot, so another admin may have approved this while it
+    // sat here. Rejecting deletes the row outright, and there is no undo.
+    const { data: current, error: checkErr } = await supabase
+      .from(table)
+      .select("is_approved")
+      .eq("id", id)
+      .maybeSingle();
+    if (checkErr) return toast.error(checkErr.message);
+    if (current?.is_approved) {
+      drop(id);
+      toast.error(`Already approved — this ${kind} is live, so nothing was deleted.`);
+      onChanged?.();
+      return;
+    }
+
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) return toast.error(error.message);
+    drop(id);
+    toast.success(note.trim() ? `Rejected — ${note}` : "Rejected");
+    onChanged?.();
+  }
+
+  function drop(id: string) {
     if (kind === "competition") setComps((l) => l.filter((c) => c.id !== id));
     else setClubList((l) => l.filter((c) => c.id !== id));
-    toast.success(note.trim() ? `Rejected — ${note}` : "Rejected");
   }
 
   const items = kind === "competition" ? comps : clubList;

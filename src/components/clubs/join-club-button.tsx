@@ -10,6 +10,7 @@ export function JoinClubButton({ clubId, clubName }: { clubId: string; clubName:
   const [joined, setJoined] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [checking, setChecking] = React.useState(true);
+  const pending = React.useRef(false);
 
   React.useEffect(() => {
     (async () => {
@@ -29,31 +30,42 @@ export function JoinClubButton({ clubId, clubName }: { clubId: string; clubName:
   }, [clubId]);
 
   async function join() {
-    const supabase = getSupabaseBrowser();
-    if (!supabase) return toast.error("Supabase not configured.");
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth.user) {
-      toast.error("Log in to join clubs", {
-        action: { label: "Log in", onClick: () => (window.location.href = "/login") },
-      });
-      return;
-    }
+    // A second click lands before the auth round-trip finishes, so the disabled
+    // prop alone is not enough to stop a duplicate insert.
+    if (pending.current) return;
+    pending.current = true;
     setLoading(true);
-    const { error } = await supabase
-      .from("participation")
-      .insert({ user_id: auth.user.id, club_id: clubId, status: "registered" });
-    if (!error) {
-      await supabase.from("analytics_events").insert({
-        event_type: "club_joined",
-        user_id: auth.user.id,
-        reference_id: clubId,
-      });
-      setJoined(true);
-      toast.success(`You joined ${clubName} 🎉`);
-    } else {
-      toast.error(error.message);
+    try {
+      const supabase = getSupabaseBrowser();
+      if (!supabase) return toast.error("Supabase not configured.");
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) {
+        toast.error("Log in to join clubs", {
+          action: { label: "Log in", onClick: () => (window.location.href = "/login") },
+        });
+        return;
+      }
+      const { error } = await supabase
+        .from("participation")
+        .insert({ user_id: auth.user.id, club_id: clubId, status: "registered" });
+      if (!error) {
+        await supabase.from("analytics_events").insert({
+          event_type: "club_joined",
+          user_id: auth.user.id,
+          reference_id: clubId,
+        });
+        setJoined(true);
+        toast.success(`You joined ${clubName} 🎉`);
+      } else if (error.code === "23505") {
+        setJoined(true);
+        toast.success(`You're already a member of ${clubName}`);
+      } else {
+        toast.error(error.message);
+      }
+    } finally {
+      pending.current = false;
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   if (checking) {

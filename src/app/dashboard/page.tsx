@@ -14,7 +14,7 @@ import { requireUser } from "@/lib/auth";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InterestsPrompt } from "@/components/interests-prompt";
-import { deadlineUrgency, formatDate, cn } from "@/lib/utils";
+import { daysUntil, deadlineUrgency, formatDate, cn } from "@/lib/utils";
 import type { Competition, Participation, CustomActivity } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -45,9 +45,10 @@ export default async function DashboardPage() {
   const upcoming = savedComps
     .map((p) => p.competitions)
     .filter((c): c is Competition => !!c && !!c.deadline)
+    // Compare calendar days: deadlines are dates, and this renders on a UTC server.
     .filter((c) => {
-      const d = new Date(c.deadline!).getTime() - Date.now();
-      return d >= 0 && d <= 30 * 86400000;
+      const d = daysUntil(c.deadline);
+      return d !== null && d >= 0 && d <= 30;
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5);

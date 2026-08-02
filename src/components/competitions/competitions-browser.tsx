@@ -30,11 +30,23 @@ import { CategoryBadge, FormatBadge, RegionBadge } from "./badges";
 import { CompetitionFormDialog } from "./competition-form-dialog";
 import { TeammatesPanel } from "./teammates-panel";
 import { InterestsDialog } from "@/components/interests-dialog";
-import { CATEGORIES, cn, daysUntil, deadlineUrgency, formatDate } from "@/lib/utils";
+import { CATEGORIES, cn, daysUntil, deadlineUrgency, formatDate, safeHttpUrl } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { Competition } from "@/lib/types";
 
 type SortKey = "foryou" | "deadline" | "newest" | "saved";
+
+/** Deadline sort key — closed and undated competitions sink below everything open. */
+function deadlineRank(deadline: string | null): number {
+  const d = daysUntil(deadline);
+  return d === null || d < 0 ? Infinity : d;
+}
+
+/** Past its deadline. An undated competition is evergreen, not closed. */
+function isClosed(deadline: string | null): boolean {
+  const d = daysUntil(deadline);
+  return d !== null && d < 0;
+}
 
 /** Rank a competition for the personalised feed — higher is more relevant. */
 function forYouScore(c: Competition, interests: Set<string>, history: Set<string>): number {
@@ -131,11 +143,16 @@ export function CompetitionsBrowser({
     }
 
     list = [...list].sort((a, b) => {
+      // Closed never outranks open, whatever the sort: being featured shouldn't
+      // pin an expired card to the top of the page.
+      const aClosed = isClosed(a.deadline);
+      const bClosed = isClosed(b.deadline);
+      if (aClosed !== bClosed) return aClosed ? 1 : -1;
       if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
       if (sort === "deadline") {
-        const da = daysUntil(a.deadline) ?? 99999;
-        const db = daysUntil(b.deadline) ?? 99999;
-        return da - db;
+        const da = deadlineRank(a.deadline);
+        const db = deadlineRank(b.deadline);
+        return da === db ? 0 : da - db;
       }
       if (sort === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -143,7 +160,8 @@ export function CompetitionsBrowser({
     return list;
   }, [competitions, query, category, region, format, deadline, sort, forYou, savedIds, userInterests, historyCategories]);
 
-  async function toggleSave(comp: Competition, e?: React.MouseEvent) {
+  // Stable identities so the memoised cards survive a re-render on every keystroke.
+  const toggleSave = React.useCallback(async (comp: Competition, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!loggedIn) {
       toast.error("Log in to save competitions", {
@@ -171,13 +189,18 @@ export function CompetitionsBrowser({
       toast.success("Saved to your tracker");
     }
     setSavingId(null);
-  }
+  }, [loggedIn, savedIds]);
+
+  const openCompetition = React.useCallback((comp: Competition) => setActive(comp), []);
 
   function share(comp: Competition) {
     const url = `${window.location.origin}/competitions?c=${comp.id}`;
     if (navigator.share) navigator.share({ title: comp.title, url }).catch(() => {});
     else { navigator.clipboard.writeText(url); toast.success("Link copied"); }
   }
+
+  const registerUrl = active ? safeHttpUrl(active.registration_link) : null;
+  const bannerUrl = active ? safeHttpUrl(active.banner_url) : null;
 
   return (
     <div>
@@ -281,8 +304,8 @@ export function CompetitionsBrowser({
                 saved={savedIds.has(comp.id)}
                 saving={savingId === comp.id}
                 interest={interestCounts[comp.id] ?? 0}
-                onSave={(e) => toggleSave(comp, e)}
-                onOpen={() => setActive(comp)}
+                onSave={toggleSave}
+                onOpen={openCompetition}
               />
             </motion.div>
           ))}
@@ -290,7 +313,12 @@ export function CompetitionsBrowser({
       )}
 
       {/* detail modal */}
-      <Dialog open={!!active} onClose={() => setActive(null)} className="max-w-3xl">
+      <Dialog
+        open={!!active}
+        onClose={() => setActive(null)}
+        className="max-w-3xl"
+        label={active?.title ?? "Competition details"}
+      >
         {active && (
           <div>
             {isAdmin && (
@@ -302,10 +330,10 @@ export function CompetitionsBrowser({
                 <Pencil className="h-4 w-4" />
               </button>
             )}
-            {active.banner_url && (
+            {bannerUrl && (
               <div className="mb-4 overflow-hidden rounded-xl border border-ink/10">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={active.banner_url} alt="" className="h-40 w-full object-cover sm:h-48" />
+                <img src={bannerUrl} alt="" className="h-40 w-full object-cover sm:h-48" />
               </div>
             )}
             <div className={cn("mb-3 flex flex-wrap items-center gap-2", isAdmin && "pl-9")}>
@@ -357,9 +385,9 @@ export function CompetitionsBrowser({
             </dl>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              {active.registration_link && (
+              {registerUrl && (
                 <a
-                  href={active.registration_link}
+                  href={registerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={buttonVariants({ variant: "ember", className: "flex-1" })}
@@ -370,6 +398,7 @@ export function CompetitionsBrowser({
               <Button
                 variant={savedIds.has(active.id) ? "subtle" : "sketch"}
                 onClick={(e) => toggleSave(active, e)}
+                disabled={savingId === active.id}
               >
                 {savedIds.has(active.id)
                   ? <><BookmarkCheck className="h-4 w-4" /> Saved</>
@@ -424,20 +453,29 @@ function Detail({ label, value, icon }: { label: string; value: string; icon?: R
   );
 }
 
-function CompetitionCard({ comp, saved, saving, interest, onSave, onOpen }: {
+const CompetitionCard = React.memo(function CompetitionCard({ comp, saved, saving, interest, onSave, onOpen }: {
   comp: Competition;
   saved: boolean;
   saving: boolean;
   interest: number;
-  onSave: (e: React.MouseEvent) => void;
-  onOpen: () => void;
+  onSave: (comp: Competition, e: React.MouseEvent) => void;
+  onOpen: (comp: Competition) => void;
 }) {
   const urgency = deadlineUrgency(comp.deadline);
   return (
     <div
-      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(comp)}
+      onKeyDown={(e) => {
+        // Ignore keys meant for the bookmark button nested inside the card.
+        if (e.target !== e.currentTarget) return;
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onOpen(comp);
+      }}
       className={cn(
-        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-hard-hover",
+        "group flex h-full cursor-pointer flex-col rounded-[14px] border bg-panel p-5 shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-hard-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember/40 focus-visible:ring-offset-2",
         comp.is_featured ? "border-coral/50 ring-1 ring-coral/15" : "border-ink/12"
       )}
     >
@@ -451,7 +489,7 @@ function CompetitionCard({ comp, saved, saving, interest, onSave, onOpen }: {
           <CategoryBadge category={comp.category} />
         </div>
         <button
-          onClick={onSave}
+          onClick={(e) => onSave(comp, e)}
           disabled={saving}
           aria-label={saved ? "Unsave" : "Save"}
           className={cn(
@@ -493,4 +531,4 @@ function CompetitionCard({ comp, saved, saving, interest, onSave, onOpen }: {
       </div>
     </div>
   );
-}
+});

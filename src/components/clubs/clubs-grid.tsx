@@ -1,13 +1,15 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Calendar, Mail, User, X, Clock, Pencil, Users as UsersIcon } from "lucide-react";
 import { Select } from "@/components/ui/input";
+import { useFocusTrap, useModalStack } from "@/components/ui/dialog";
 import { JoinClubButton } from "./join-club-button";
 import { ClubFormDialog } from "./club-form-dialog";
-import { CATEGORIES, cn, deadlineUrgency } from "@/lib/utils";
+import { CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
 import type { Club, Competition } from "@/lib/types";
 
 const BANNER_GRADIENT = "linear-gradient(135deg, #F75C4C 0%, #E0402F 70%, #020202 240%)";
@@ -29,18 +31,7 @@ export function ClubsGrid({
   const filtered = category ? clubs.filter((c) => c.category === category) : clubs;
   const active = clubs.find((c) => c.id === activeId) ?? null;
 
-  React.useEffect(() => {
-    if (!active) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setActiveId(null);
-    }
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [active]);
+  useModalStack(!!active, () => setActiveId(null));
 
   return (
     <div>
@@ -116,11 +107,13 @@ export function ClubsGrid({
 
 function Avatar({ club, size, radius }: { club: Club; size: number; radius: number }) {
   if (club.logo_url) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
-      <img
+      <Image
         src={club.logo_url}
         alt=""
+        width={size}
+        height={size}
+        unoptimized={!optimizableImage(club.logo_url)}
         style={{ width: size, height: size, borderRadius: radius, objectFit: "cover" }}
         className="block"
       />
@@ -136,16 +129,29 @@ function Avatar({ club, size, radius }: { club: Club; size: number; radius: numb
   );
 }
 
-function Banner({ club, height, rounded }: { club: Club; height: number; rounded?: string }) {
+function Banner({
+  club,
+  height,
+  sizes,
+  rounded,
+}: {
+  club: Club;
+  height: number;
+  sizes: string;
+  rounded?: string;
+}) {
   if (club.banner_url) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
-      <img
-        src={club.banner_url}
-        alt=""
-        style={{ height, borderRadius: rounded }}
-        className="block w-full object-cover"
-      />
+      <div className="relative w-full overflow-hidden" style={{ height, borderRadius: rounded }}>
+        <Image
+          src={club.banner_url}
+          alt=""
+          fill
+          sizes={sizes}
+          unoptimized={!optimizableImage(club.banner_url)}
+          className="object-cover"
+        />
+      </div>
     );
   }
   return <div style={{ height, background: BANNER_GRADIENT, borderRadius: rounded }} className="w-full" />;
@@ -154,11 +160,24 @@ function Banner({ club, height, rounded }: { club: Club; height: number; rounded
 function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-[16px] border-[1.5px] border-ink/12 bg-panel shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-hard-hover"
+      onKeyDown={(e) => {
+        // Ignore keys meant for controls nested inside the card.
+        if (e.target !== e.currentTarget) return;
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onOpen();
+      }}
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-[16px] border-[1.5px] border-ink/12 bg-panel shadow-hard-card transition-all hover:-translate-y-0.5 hover:shadow-hard-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember/40 focus-visible:ring-offset-2"
     >
       <div className="relative" style={{ height: 84 }}>
-        <Banner club={club} height={84} />
+        <Banner
+          club={club}
+          height={84}
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+        />
         <div className="absolute" style={{ left: 18, bottom: -22 }}>
           <div className="rounded-[13px] border-[3px] border-panel">
             <Avatar club={club} size={54} radius={11} />
@@ -204,6 +223,10 @@ function ClubModal({
   isAdmin: boolean;
   onEdit: () => void;
 }) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const titleId = React.useId();
+  const onKeyDown = useFocusTrap(panelRef, true);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -214,17 +237,23 @@ function ClubModal({
       style={{ background: "rgba(2,2,2,0.5)", backdropFilter: "blur(4px)" }}
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative my-auto w-full max-w-[720px] overflow-hidden rounded-[20px] border-[1.5px] border-ink/16 bg-panel shadow-hard-modal"
+        className="relative my-auto w-full max-w-[720px] overflow-hidden rounded-[20px] border-[1.5px] border-ink/16 bg-panel shadow-hard-modal outline-none"
       >
         {/* banner header */}
         <div className="relative" style={{ height: 120 }}>
           <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: "20px 20px 0 0" }}>
-            <Banner club={club} height={120} />
+            <Banner club={club} height={120} sizes="(min-width: 768px) 720px, 100vw" />
           </div>
           {isAdmin && (
             <button
@@ -262,7 +291,9 @@ function ClubModal({
                   <Users className="h-3.5 w-3.5" /> {club.member_count} members
                 </span>
               </div>
-              <h2 className="font-heading text-3xl font-medium leading-tight text-ink">{club.name}</h2>
+              <h2 id={titleId} className="font-heading text-3xl font-medium leading-tight text-ink">
+                {club.name}
+              </h2>
             </div>
             <JoinClubButton clubId={club.id} clubName={club.name} />
           </div>

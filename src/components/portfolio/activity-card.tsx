@@ -1,7 +1,8 @@
 import * as React from "react";
+import Image from "next/image";
 import { ImageIcon, CalendarDays } from "lucide-react";
 import { CategoryBadge } from "@/components/competitions/badges";
-import { formatDate } from "@/lib/utils";
+import { formatDate, optimizableImage } from "@/lib/utils";
 import type { CustomActivity } from "@/lib/types";
 
 /** Presentational portfolio card (server-safe). `action` lets the owner view
@@ -17,11 +18,16 @@ export function ActivityCard({
     <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-fire-100 to-electric-100">
         {activity.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // Proof photos are straight-off-a-phone multi-MB uploads and a
+          // portfolio renders a gridful of them, so they go through the
+          // optimizer at card size and load lazily.
+          <Image
             src={activity.image_url}
             alt={activity.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            unoptimized={!optimizableImage(activity.image_url)}
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-fire/40">

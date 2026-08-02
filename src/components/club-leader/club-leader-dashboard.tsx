@@ -22,30 +22,81 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { CATEGORIES, cn, formatDate, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import type { Club, Competition, AppUser, CompFormat, CompRegion } from "@/lib/types";
+import type { Club, Competition, CompFormat, CompRegion, ParticipationStatus } from "@/lib/types";
 
 type Tab = "club" | "competitions" | "members";
+
+/** A row of the `club_members` RPC — safe profile fields only, no email. */
+export type ClubMember = {
+  user_id: string;
+  full_name: string | null;
+  school: string | null;
+  grade: string | null;
+  status: ParticipationStatus;
+  joined_at: string;
+};
+
+// Same colours as the tracker, so a status reads the same wherever it appears.
+const STATUS_STYLE: Record<ParticipationStatus, string> = {
+  interested: "bg-charcoal/10 text-charcoal/70",
+  registered: "bg-electric-50 text-electric-700",
+  participated: "bg-amber-100 text-amber-700",
+  won: "bg-emerald-100 text-emerald-700",
+};
 
 export function ClubLeaderDashboard({
   userId,
   initialClub,
   initialComps,
   members,
+  membersFailed,
 }: {
   userId: string;
   initialClub: Club | null;
   initialComps: Competition[];
-  members: AppUser[];
+  members: ClubMember[];
+  membersFailed: boolean;
 }) {
   const [tab, setTab] = React.useState<Tab>("club");
   const [club, setClub] = React.useState<Club | null>(initialClub);
   const [comps, setComps] = React.useState<Competition[]>(initialComps);
   const [addOpen, setAddOpen] = React.useState(false);
 
+  async function deleteComp(comp: Competition) {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return toast.error("Supabase not configured.");
+    const index = comps.findIndex((x) => x.id === comp.id);
+    setComps((list) => list.filter((x) => x.id !== comp.id));
+    // Selecting the deleted row is the only way to tell a real delete apart from
+    // one RLS silently dropped, which otherwise reappears on the next load.
+    const { data, error } = await supabase
+      .from("competitions")
+      .delete()
+      .eq("id", comp.id)
+      .select("id");
+    if (error || !data?.length) {
+      setComps((list) => {
+        const restored = [...list];
+        restored.splice(Math.max(index, 0), 0, comp);
+        return restored;
+      });
+      return toast.error(
+        error ? `Could not delete: ${error.message}` : "Could not delete — you may not have permission."
+      );
+    }
+    toast.success("Competition deleted");
+  }
+
   const tabs: { key: Tab; label: string; icon: React.ElementType; count?: number }[] = [
     { key: "club", label: "My Club", icon: Building2 },
     { key: "competitions", label: "Competitions", icon: Trophy, count: comps.length },
-    { key: "members", label: "Members", icon: Users2, count: members.length },
+    {
+      key: "members",
+      label: "Members",
+      icon: Users2,
+      // A count of 0 next to a failed read would read as "nobody has joined".
+      count: membersFailed ? undefined : members.length,
+    },
   ];
 
   return (
@@ -105,17 +156,7 @@ export function ClubLeaderDashboard({
           ) : (
             <div className="space-y-3">
               {comps.map((c) => (
-                <CompRow
-                  key={c.id}
-                  comp={c}
-                  onDelete={async () => {
-                    const supabase = getSupabaseBrowser();
-                    if (!supabase) return;
-                    setComps((list) => list.filter((x) => x.id !== c.id));
-                    await supabase.from("competitions").delete().eq("id", c.id);
-                    toast.success("Competition deleted");
-                  }}
-                />
+                <CompRow key={c.id} comp={c} onDelete={() => deleteComp(c)} />
               ))}
             </div>
           )}
@@ -131,7 +172,13 @@ export function ClubLeaderDashboard({
 
       {tab === "members" && (
         <div>
-          {members.length === 0 ? (
+          {membersFailed ? (
+            <EmptyState
+              icon={<Users2 className="h-7 w-7" />}
+              title="Couldn't load your members"
+              description="The roster didn't come back this time. Refresh the page to try again."
+            />
+          ) : members.length === 0 ? (
             <EmptyState
               icon={<Users2 className="h-7 w-7" />}
               title="No members yet"
@@ -139,34 +186,43 @@ export function ClubLeaderDashboard({
             />
           ) : (
             <div className="overflow-hidden rounded-xl border border-charcoal/10 bg-white shadow-sm">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-charcoal/10 bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Member</th>
-                    <th className="px-4 py-3">School</th>
-                    <th className="px-4 py-3">Grade</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-charcoal/5">
-                  {members.map((m) => (
-                    <tr key={m.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fire to-electric text-xs font-bold text-white">
-                            {initials(m.full_name || m.email)}
-                          </span>
-                          <div>
-                            <p className="font-medium text-charcoal">{m.full_name || "Student"}</p>
-                            <p className="text-xs text-muted-foreground">{m.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{m.school ?? "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{m.grade ?? "—"}</td>
+              <div className="scrollbar-thin overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-charcoal/10 bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3">Member</th>
+                      <th className="px-4 py-3">School</th>
+                      <th className="px-4 py-3">Grade</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Joined</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-charcoal/5">
+                    {members.map((m) => (
+                      <tr key={m.user_id} className="hover:bg-muted/30">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2.5">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fire to-electric text-xs font-bold text-white">
+                              {initials(m.full_name)}
+                            </span>
+                            <p className="whitespace-nowrap font-medium text-charcoal">
+                              {m.full_name || "Student"}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{m.school ?? "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{m.grade ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <Badge className={cn("capitalize", STATUS_STYLE[m.status])}>{m.status}</Badge>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                          {formatDate(m.joined_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

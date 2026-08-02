@@ -54,17 +54,38 @@ export function PortfolioView({
     toast.success(next ? "Portfolio is now public 🌍" : "Portfolio is now private 🔒");
   }
 
-  function copyLink() {
+  async function copyLink() {
     const url = `${window.location.origin}/portfolio/${userId}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Share link copied to clipboard");
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Share link copied to clipboard");
+    } catch {
+      toast.error(`Clipboard blocked — copy it manually: ${url}`);
+    }
   }
 
   async function removeActivity(a: CustomActivity) {
     const supabase = getSupabaseBrowser();
-    if (!supabase) return;
+    if (!supabase) return toast.error("Supabase not configured.");
+    const index = activities.findIndex((x) => x.id === a.id);
     setActivities((list) => list.filter((x) => x.id !== a.id));
-    await supabase.from("custom_activities").delete().eq("id", a.id);
+    // Selecting the deleted row is the only way to tell a real delete apart from
+    // one RLS silently dropped, which otherwise reappears on the next load.
+    const { data, error } = await supabase
+      .from("custom_activities")
+      .delete()
+      .eq("id", a.id)
+      .select("id");
+    if (error || !data?.length) {
+      setActivities((list) => {
+        const restored = [...list];
+        restored.splice(Math.max(index, 0), 0, a);
+        return restored;
+      });
+      return toast.error(
+        error ? `Could not remove: ${error.message}` : "Could not remove — you may not have permission."
+      );
+    }
     toast.success("Activity removed");
   }
 

@@ -8,7 +8,8 @@ export function CategoryBadge({ category }: { category?: string | null }) {
   return <Badge className={categoryColor(category)}>{category}</Badge>;
 }
 
-export function FormatBadge({ format }: { format: CompFormat }) {
+export function FormatBadge({ format }: { format?: CompFormat | null }) {
+  if (!format) return null;
   const map = {
     online: { icon: Laptop, label: "Online" },
     onsite: { icon: MapPin, label: "Onsite" },
@@ -22,7 +23,8 @@ export function FormatBadge({ format }: { format: CompFormat }) {
   );
 }
 
-export function RegionBadge({ region }: { region: CompRegion }) {
+export function RegionBadge({ region }: { region?: CompRegion | null }) {
+  if (!region) return null;
   return (
     <Badge className="gap-1 bg-ink/5 text-ink-soft">
       <Globe className="h-3 w-3" /> {region}

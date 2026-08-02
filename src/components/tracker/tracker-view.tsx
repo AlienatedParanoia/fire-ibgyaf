@@ -62,11 +62,15 @@ export function TrackerView({
 
   async function cycleStatus(p: Participation) {
     if (!supabase) return toast.error("Supabase not configured.");
-    const next = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length];
+    const previous = p.status;
+    const next = STATUSES[(STATUSES.indexOf(previous) + 1) % STATUSES.length];
     setParticipation((list) => list.map((x) => (x.id === p.id ? { ...x, status: next } : x)));
     const { error } = await supabase.from("participation").update({ status: next }).eq("id", p.id);
-    if (error) toast.error(error.message);
-    else toast.success(`Marked as ${next}`);
+    if (error) {
+      setParticipation((list) => list.map((x) => (x.id === p.id ? { ...x, status: previous } : x)));
+      return toast.error(`Could not update status: ${error.message}`);
+    }
+    toast.success(`Marked as ${next}`);
   }
 
   async function removeParticipation(p: Participation) {

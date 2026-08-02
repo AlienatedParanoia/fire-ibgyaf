@@ -12,7 +12,13 @@ import type { AppUser } from "@/lib/types";
 type Audience = "everyone" | "student" | "club_leader" | "admin" | "user";
 
 /** Admin composer to send an in-app notification to a user, a role, or everyone. */
-export function NotificationsSection({ users }: { users: AppUser[] }) {
+export function NotificationsSection({
+  users,
+  onChanged,
+}: {
+  users: AppUser[];
+  onChanged?: () => void;
+}) {
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
   const [link, setLink] = React.useState("");
@@ -44,6 +50,7 @@ export function NotificationsSection({ users }: { users: AppUser[] }) {
     toast.success(`Sent to ${recipients.length} ${recipients.length === 1 ? "person" : "people"}`);
     setTitle(""); setBody(""); setLink("");
     setSending(false);
+    onChanged?.();
   }
 
   return (

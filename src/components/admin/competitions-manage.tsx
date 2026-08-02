@@ -12,7 +12,15 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SectionHeading } from "./users-section";
 import type { Club, Competition } from "@/lib/types";
 
-export function CompetitionsManage({ initial, clubs = [] }: { initial: Competition[]; clubs?: Club[] }) {
+export function CompetitionsManage({
+  initial,
+  clubs = [],
+  onChanged,
+}: {
+  initial: Competition[];
+  clubs?: Club[];
+  onChanged?: () => void;
+}) {
   const [items, setItems] = React.useState(initial);
   const [q, setQ] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
@@ -41,6 +49,7 @@ export function CompetitionsManage({ initial, clubs = [] }: { initial: Competiti
 
   function onSaved(c: Competition) {
     setItems((l) => (l.some((x) => x.id === c.id) ? l.map((x) => (x.id === c.id ? c : x)) : [c, ...l]));
+    onChanged?.();
   }
 
   async function toggleApprove(c: Competition) {
@@ -55,6 +64,7 @@ export function CompetitionsManage({ initial, clubs = [] }: { initial: Competiti
       return;
     }
     toast.success(next ? "Approved" : "Unapproved");
+    onChanged?.();
   }
 
   async function toggleFeature(c: Competition) {
@@ -69,6 +79,7 @@ export function CompetitionsManage({ initial, clubs = [] }: { initial: Competiti
       return;
     }
     toast.success(next ? "Featured" : "Unfeatured");
+    onChanged?.();
   }
 
   async function deleteItem(c: Competition) {
@@ -81,6 +92,7 @@ export function CompetitionsManage({ initial, clubs = [] }: { initial: Competiti
     setItems((l) => l.filter((x) => x.id !== c.id));
     toast.success("Deleted");
     setDeleting(null);
+    onChanged?.();
   }
 
   return (

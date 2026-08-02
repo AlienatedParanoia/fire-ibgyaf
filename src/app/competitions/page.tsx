@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { getSupabaseServer, getCurrentUser } from "@/lib/supabase/server";
 import { getSupabasePublic } from "@/lib/supabase/public";
 import { CompetitionsBrowser } from "@/components/competitions/competitions-browser";
+import { daysUntil } from "@/lib/utils";
 import type { Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -68,11 +69,18 @@ async function getViewerData() {
 export default async function CompetitionsPage() {
   const [{ competitions, interestCounts }, { savedIds, loggedIn, isAdmin, interests, historyCategories }] =
     await Promise.all([getPublicCompetitions(), getViewerData()]);
+  // A passed deadline is a closed competition, so it cannot be counted as live.
+  // Counted per request rather than inside the cached fetch so the number keeps
+  // up with the calendar.
+  const liveCount = competitions.filter((c) => {
+    const d = daysUntil(c.deadline);
+    return d === null || d >= 0;
+  }).length;
   return (
     <div className="container py-10">
       <header className="mb-8 border-b border-ink/10 pb-6">
         <p className="mb-2 font-hand text-[20px] text-coral" style={{ transform: "rotate(-1deg)", display: "inline-block" }}>
-          {competitions.length} live opportunities
+          {liveCount} live {liveCount === 1 ? "opportunity" : "opportunities"}
         </p>
         <h1 className="font-heading text-4xl font-medium text-ink">
           Competitions<span className="text-coral">.</span>

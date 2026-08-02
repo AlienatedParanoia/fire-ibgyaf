@@ -115,12 +115,14 @@ on conflict (id) do update set
 
 -- ---- A few sample community submissions (pending) --------------------------
 insert into public.community_submissions
-  (submitted_by_name, submitted_by_email, type, title, description, category, deadline, registration_link, organizer, status)
+  (id, submitted_by_name, submitted_by_email, type, title, description, category, deadline, registration_link, organizer, status)
 values
-  ('Rachel Ng', 'rachel@example.com', 'competition',
+  ('44444444-0000-0000-0000-000000000001',
+   'Rachel Ng', 'rachel@example.com', 'competition',
    'Astronomy Challenge 2026', 'A stargazing and astrophysics quiz competition for secondary students.',
    'Science', (current_date + interval '50 days')::date, 'https://example.com/astro', 'Science Centre Observatory', 'pending'),
-  ('Marcus Tan', 'marcus@example.com', 'club',
+  ('44444444-0000-0000-0000-000000000002',
+   'Marcus Tan', 'marcus@example.com', 'club',
    'Chess Strategy Club', 'Weekly chess training and inter-school tournament prep.',
    'Other', null, null, 'Marcus Tan', 'pending')
-on conflict do nothing;
+on conflict (id) do nothing;

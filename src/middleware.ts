@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -28,11 +29,17 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: User | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // The matcher covers almost every route, so a Supabase outage or a
+    // malformed cookie must not 500 the public pages — carry on signed out.
+  }
 
-  // Send already-authenticated users away from the auth pages.
+  // Send already-authenticated users away from the auth pages — only on a
+  // resolved user, so a failed lookup can never lock anyone out of them.
   const path = request.nextUrl.pathname;
   if (user && (path === "/login" || path === "/signup")) {
     const dest = request.nextUrl.clone();

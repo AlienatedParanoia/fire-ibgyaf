@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
@@ -21,7 +21,6 @@ import { Button } from "./ui/button";
 import { buttonVariants } from "./ui/button-variants";
 import { NotificationsBell } from "./notifications-bell";
 import { cn, initials } from "@/lib/utils";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { AppUser } from "@/lib/types";
 
 const NAV_LINKS = [
@@ -36,7 +35,6 @@ const NAV_LINKS = [
 
 export function Navbar({ profile }: { profile: AppUser | null }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
@@ -54,11 +52,10 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  async function logout() {
-    const supabase = getSupabaseBrowser();
-    if (supabase) await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+  // A full navigation, not a fetch: only the browser can act on the redirect
+  // and the Set-Cookie headers that actually clear the session.
+  function logout() {
+    window.location.assign("/auth/signout");
   }
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");

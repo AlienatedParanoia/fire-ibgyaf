@@ -24,7 +24,9 @@ async function getData() {
 
   const list = (profiles ?? []) as PublicProfile[];
 
-  // Activity counts for each public portfolio (readable via RLS)
+  // Activity counts for each public portfolio (readable via RLS). Tallied from
+  // one request — a count per profile would be a round-trip per card on a page
+  // that grows with every student who goes public.
   const counts: Record<string, number> = {};
   if (list.length) {
     const { data: acts } = await supabase

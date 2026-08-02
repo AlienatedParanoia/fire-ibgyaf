@@ -67,8 +67,9 @@ export interface Competition {
   eligibility: string | null;
   registration_link: string | null;
   prize: string | null;
-  format: CompFormat;
-  region: CompRegion;
+  // Nullable in SQL — rows created by the submissions flow leave them unset.
+  format: CompFormat | null;
+  region: CompRegion | null;
   banner_url: string | null;
   club_id: string | null;
   submitted_by: string | null;

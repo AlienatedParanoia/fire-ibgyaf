@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Lock, GraduationCap, School, FolderHeart } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -8,6 +10,8 @@ import type { CustomActivity } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://projectfire.dev";
+
 interface PublicProfile {
   id: string;
   full_name: string | null;
@@ -15,7 +19,8 @@ interface PublicProfile {
   grade: string | null;
 }
 
-async function getPublicPortfolio(id: string) {
+// Cached so generateMetadata and the page itself share one set of queries.
+const getPublicPortfolio = cache(async (id: string) => {
   const supabase = getSupabaseServer();
   if (!supabase) return { profile: null as PublicProfile | null, activities: [] as CustomActivity[] };
   const { data: profile } = await supabase
@@ -23,13 +28,44 @@ async function getPublicPortfolio(id: string) {
     .select("*")
     .eq("id", id)
     .maybeSingle();
-  if (!profile) return { profile: null, activities: [] };
+  if (!profile) return { profile: null as PublicProfile | null, activities: [] as CustomActivity[] };
   const { data: activities } = await supabase
     .from("custom_activities")
     .select("*")
     .eq("user_id", id)
     .order("date", { ascending: false });
   return { profile: profile as PublicProfile, activities: (activities ?? []) as CustomActivity[] };
+});
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const { profile, activities } = await getPublicPortfolio(params.id);
+
+  // Nothing to preview, and a private portfolio must not be indexable.
+  if (!profile) {
+    return { title: "Private portfolio — F.I.R.E", robots: { index: false, follow: false } };
+  }
+
+  const name = profile.full_name || "Student";
+  const context = [profile.school, profile.grade].filter(Boolean).join(" · ");
+  const title = `${name} — extracurricular portfolio | F.I.R.E`;
+  const description = `${activities.length} ${
+    activities.length === 1 ? "activity" : "activities"
+  } — competitions, clubs and achievements${context ? ` from ${context}` : ""}, on F.I.R.E.`;
+  const url = `${SITE_URL}/portfolio/${profile.id}`;
+  const cover = activities.find((a) => a.image_url)?.image_url;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "profile",
+      images: cover ? [cover] : undefined,
+    },
+  };
 }
 
 export default async function PublicPortfolioPage({ params }: { params: { id: string } }) {

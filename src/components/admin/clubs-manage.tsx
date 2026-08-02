@@ -13,7 +13,15 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SectionHeading } from "./users-section";
 import type { AppUser, Club } from "@/lib/types";
 
-export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: AppUser[] }) {
+export function ClubsManage({
+  initial,
+  users = [],
+  onChanged,
+}: {
+  initial: Club[];
+  users?: AppUser[];
+  onChanged?: () => void;
+}) {
   const [items, setItems] = React.useState(initial);
   const [q, setQ] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
@@ -21,6 +29,7 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [membersFor, setMembersFor] = React.useState<Club | null>(null);
   const [deleting, setDeleting] = React.useState<string | null>(null);
+  const membersEdited = React.useRef(false);
 
   const filtered = items.filter((c) => {
     if (q && !`${c.name} ${c.contact_person ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
@@ -41,8 +50,19 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
 
   function closeDialog() { setDialogOpen(false); setEditing(null); }
 
+  // A panel refresh remounts this section, so telling it about every single
+  // member change would slam the dialog shut between adds. It waits for the
+  // admin to finish instead.
+  function closeMembers() {
+    setMembersFor(null);
+    if (!membersEdited.current) return;
+    membersEdited.current = false;
+    onChanged?.();
+  }
+
   function onSaved(c: Club) {
     setItems((l) => (l.some((x) => x.id === c.id) ? l.map((x) => (x.id === c.id ? c : x)) : [c, ...l]));
+    onChanged?.();
   }
 
   async function toggleApprove(c: Club) {
@@ -57,6 +77,7 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
       return;
     }
     toast.success(next ? "Approved" : "Unapproved");
+    onChanged?.();
   }
 
   async function deleteItem(c: Club) {
@@ -69,6 +90,7 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
     setItems((l) => l.filter((x) => x.id !== c.id));
     toast.success("Deleted");
     setDeleting(null);
+    onChanged?.();
   }
 
   return (
@@ -170,7 +192,8 @@ export function ClubsManage({ initial, users = [] }: { initial: Club[]; users?: 
         open={!!membersFor}
         club={membersFor}
         users={users}
-        onClose={() => setMembersFor(null)}
+        onClose={closeMembers}
+        onChanged={() => { membersEdited.current = true; }}
       />
     </div>
   );

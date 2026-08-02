@@ -13,10 +13,23 @@ import { getSupabaseServer } from "@/lib/supabase/server";
  * plain page instead just drops the token and leaves the user logged out.
  */
 
-/** Only same-origin absolute paths — never "//evil.com" or a full URL. */
-function safeNext(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw;
+/**
+ * Only same-origin destinations. Resolving first and comparing origins is the
+ * only dependable guard: the URL parser treats a backslash as a path
+ * separator, so string checks let "/\evil.com" through as a host.
+ */
+function safeNext(raw: string | null, base: string): string {
+  if (!raw) return "/dashboard";
+  try {
+    const url = new URL(raw, base);
+    const path = url.pathname + url.search + url.hash;
+    // `path` gets resolved against the request URL again on redirect, where a
+    // leading "//" would read as an authority.
+    if (url.origin !== new URL(base).origin || path.startsWith("//")) return "/dashboard";
+    return path;
+  } catch {
+    return "/dashboard";
+  }
 }
 
 function failed(request: NextRequest, message: string) {
@@ -27,7 +40,7 @@ function failed(request: NextRequest, message: string) {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const next = safeNext(searchParams.get("next"));
+  const next = safeNext(searchParams.get("next"), request.url);
 
   // Supabase reports its own failures (expired or already-used link) this way.
   const reported = searchParams.get("error_description") ?? searchParams.get("error");

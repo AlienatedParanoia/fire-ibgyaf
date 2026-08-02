@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutGrid,
@@ -57,22 +58,38 @@ type Section =
   | "settings";
 
 export function AdminPanel({ data }: { data: AdminData }) {
+  const router = useRouter();
   const [section, setSection] = React.useState<Section>("overview");
 
-  const pendingComps = data.competitions.filter((c) => !c.is_approved).length;
-  const pendingClubs = data.clubs.filter((c) => !c.is_approved).length;
-  const pendingSubs = data.submissions.filter((s) => s.status === "pending").length;
+  // Every section seeds its own state from `data`, so they drift apart as soon
+  // as one of them mutates a row. Pulling a fresh server render and remounting
+  // the visible section keeps them from acting on a row someone already
+  // approved, rejected or deleted in another tab.
+  const [generation, setGeneration] = React.useState(0);
+  const rendered = React.useRef(data);
+  React.useEffect(() => {
+    if (rendered.current === data) return;
+    rendered.current = data;
+    setGeneration((n) => n + 1);
+  }, [data]);
+
+  const refresh = React.useCallback(() => router.refresh(), [router]);
+
+  function openSection(key: Section) {
+    setSection(key);
+    refresh();
+  }
 
   const nav: { key: Section; label: string; icon: React.ElementType; badge?: number }[] = [
     { key: "overview",       label: "Overview",               icon: LayoutGrid },
     { key: "users",          label: "Users",                  icon: Users },
-    { key: "competitions",   label: "Manage Competitions",    icon: Trophy,      badge: data.competitions.length },
-    { key: "clubs",          label: "Manage Clubs",           icon: Building2,   badge: data.clubs.length },
-    { key: "participation",  label: "Participation",          icon: ListChecks,  badge: data.participation.length },
+    { key: "competitions",   label: "Manage Competitions",    icon: Trophy,      badge: data.counts.competitions },
+    { key: "clubs",          label: "Manage Clubs",           icon: Building2,   badge: data.counts.clubs },
+    { key: "participation",  label: "Participation",          icon: ListChecks,  badge: data.counts.participation },
     { key: "notifications",  label: "Send Notification",      icon: Bell },
-    { key: "comp-approvals", label: "Competition Approvals",  icon: ClipboardList, badge: pendingComps },
-    { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: pendingClubs },
-    { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: pendingSubs },
+    { key: "comp-approvals", label: "Competition Approvals",  icon: ClipboardList, badge: data.counts.pendingCompetitions },
+    { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: data.counts.pendingClubs },
+    { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: data.counts.pendingSubmissions },
     { key: "analytics",      label: "Analytics",              icon: BarChart3 },
     { key: "settings",       label: "Settings",               icon: Settings },
   ];
@@ -91,7 +108,7 @@ export function AdminPanel({ data }: { data: AdminData }) {
             {nav.map((n) => (
               <button
                 key={n.key}
-                onClick={() => setSection(n.key)}
+                onClick={() => openSection(n.key)}
                 className={cn(
                   "flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:w-full",
                   section === n.key
@@ -118,29 +135,38 @@ export function AdminPanel({ data }: { data: AdminData }) {
 
         {/* content */}
         <motion.div
-          key={section}
+          key={`${section}-${generation}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
           {section === "overview"       && <Overview data={data} />}
-          {section === "users"          && <UsersSection users={data.users} />}
-          {section === "competitions"   && <CompetitionsManage initial={data.competitions} clubs={data.clubs} />}
-          {section === "clubs"          && <ClubsManage initial={data.clubs} users={data.users} />}
+          {section === "users"          && <UsersSection users={data.users} onChanged={refresh} />}
+          {section === "competitions"   && (
+            <CompetitionsManage initial={data.competitions} clubs={data.clubs} onChanged={refresh} />
+          )}
+          {section === "clubs"          && (
+            <ClubsManage initial={data.clubs} users={data.users} onChanged={refresh} />
+          )}
           {section === "participation"  && (
             <ParticipationSection
               participation={data.participation}
               users={data.users}
               competitions={data.competitions}
               clubs={data.clubs}
+              onChanged={refresh}
             />
           )}
-          {section === "notifications"  && <NotificationsSection users={data.users} />}
+          {section === "notifications"  && <NotificationsSection users={data.users} onChanged={refresh} />}
           {section === "comp-approvals" && (
-            <ApprovalsSection kind="competition" competitions={data.competitions} />
+            <ApprovalsSection kind="competition" competitions={data.competitions} onChanged={refresh} />
           )}
-          {section === "club-approvals" && <ApprovalsSection kind="club" clubs={data.clubs} />}
-          {section === "submissions"    && <SubmissionsSection submissions={data.submissions} />}
+          {section === "club-approvals" && (
+            <ApprovalsSection kind="club" clubs={data.clubs} onChanged={refresh} />
+          )}
+          {section === "submissions"    && (
+            <SubmissionsSection submissions={data.submissions} onChanged={refresh} />
+          )}
           {section === "analytics"      && <Analytics data={data} />}
           {section === "settings"       && <SettingsSection />}
         </motion.div>
@@ -152,21 +178,19 @@ export function AdminPanel({ data }: { data: AdminData }) {
 /* ─────────────────────────── OVERVIEW ─────────────────────────── */
 function Overview({ data }: { data: AdminData }) {
   const kpis = [
-    { label: "Total Users",         value: data.users.length,                          icon: Users,      color: "text-ember bg-ember/10" },
-    { label: "Total Clubs",         value: data.clubs.length,                          icon: Building2,  color: "text-pen bg-pen/10" },
-    { label: "Total Competitions",  value: data.competitions.length,                   icon: Trophy,     color: "text-emerald-600 bg-emerald-50" },
+    { label: "Total Users",         value: data.counts.users,                          icon: Users,      color: "text-ember bg-ember/10" },
+    { label: "Total Clubs",         value: data.counts.clubs,                          icon: Building2,  color: "text-pen bg-pen/10" },
+    { label: "Total Competitions",  value: data.counts.competitions,                   icon: Trophy,     color: "text-emerald-600 bg-emerald-50" },
     {
       label: "Pending Approvals",
-      value:
-        data.competitions.filter((c) => !c.is_approved).length +
-        data.clubs.filter((c) => !c.is_approved).length,
+      value: data.counts.pendingCompetitions + data.counts.pendingClubs,
       icon: Clock,
       color: "text-amber-600 bg-amber-50",
     },
     { label: "Weekly Logins",       value: weeklyLogins(data),                         icon: UserCheck,  color: "text-purple-600 bg-purple-50" },
     {
       label: "Submissions Pending",
-      value: data.submissions.filter((s) => s.status === "pending").length,
+      value: data.counts.pendingSubmissions,
       icon: Inbox,
       color: "text-rose-600 bg-rose-50",
     },
@@ -302,7 +326,9 @@ function RealtimeFeed({
         { event: "INSERT", schema: "public", table: "analytics_events" },
         (payload) => {
           const e = payload.new as AdminData["analytics"][number];
-          setEvents((list) => [e, ...list].slice(0, 12));
+          setEvents((list) =>
+            list.some((x) => x.id === e.id) ? list : [e, ...list].slice(0, 12)
+          );
         }
       )
       .subscribe((status) => setLive(status === "SUBSCRIBED"));
@@ -336,8 +362,8 @@ function RealtimeFeed({
         <Empty />
       ) : (
         <ul className="max-h-[220px] space-y-3 overflow-y-auto scrollbar-thin">
-          {events.map((e, i) => (
-            <li key={i} className="flex items-start gap-2.5">
+          {events.map((e) => (
+            <li key={e.id} className="flex items-start gap-2.5">
               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-ember" />
               <div>
                 <p className="text-sm text-ink">

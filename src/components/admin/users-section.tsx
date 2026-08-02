@@ -17,7 +17,13 @@ const ROLE_STYLE: Record<UserRole, string> = {
   admin:       "bg-ember/10 text-ember",
 };
 
-export function UsersSection({ users: initial }: { users: AppUser[] }) {
+export function UsersSection({
+  users: initial,
+  onChanged,
+}: {
+  users: AppUser[];
+  onChanged?: () => void;
+}) {
   const [users, setUsers] = React.useState(initial);
   const [q, setQ] = React.useState("");
   const [role, setRole] = React.useState("");
@@ -43,19 +49,31 @@ export function UsersSection({ users: initial }: { users: AppUser[] }) {
       setUsers((l) => l.map((u) => (u.id === user.id ? { ...u, role: user.role } : u)));
     } else {
       toast.success(`${user.full_name || user.email} is now ${newRole.replace("_", " ")}`);
+      onChanged?.();
     }
   }
 
   async function deleteUser(user: AppUser) {
     if (!confirm(`Delete user "${user.full_name || user.email}"? This cannot be undone.`)) return;
-    const supabase = getSupabaseBrowser();
-    if (!supabase) return toast.error("Supabase not configured.");
     setDeleting(user.id);
-    const { error } = await supabase.from("users").delete().eq("id", user.id);
-    if (error) { toast.error(error.message); setDeleting(null); return; }
-    setUsers((l) => l.filter((u) => u.id !== user.id));
-    toast.success("User removed");
-    setDeleting(null);
+    try {
+      // The auth account has to go too, so this runs server-side with the
+      // service-role key; the profile row cascades away with it.
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) return toast.error(body.error ?? "Could not delete this user.");
+      setUsers((l) => l.filter((u) => u.id !== user.id));
+      toast.success("User removed");
+      onChanged?.();
+    } catch {
+      toast.error("Could not reach the server.");
+    } finally {
+      setDeleting(null);
+    }
   }
 
   return (
@@ -166,7 +184,10 @@ export function UsersSection({ users: initial }: { users: AppUser[] }) {
         open={!!editing}
         user={editing}
         onClose={() => setEditing(null)}
-        onSaved={(u) => setUsers((l) => l.map((x) => (x.id === u.id ? u : x)))}
+        onSaved={(u) => {
+          setUsers((l) => l.map((x) => (x.id === u.id ? u : x)));
+          onChanged?.();
+        }}
       />
     </div>
   );

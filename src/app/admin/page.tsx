@@ -6,6 +6,7 @@ import type {
   Competition,
   CommunitySubmission,
   Participation,
+  StudentNote,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export interface AdminData {
   clubs: Club[];
   competitions: Competition[];
   submissions: CommunitySubmission[];
+  notes: StudentNote[];
   participation: Participation[];
   analytics: { id: string; event_type: string; created_at: string; user_id: string | null }[];
   counts: {
@@ -29,6 +31,7 @@ export interface AdminData {
     pendingCompetitions: number;
     pendingClubs: number;
     pendingSubmissions: number;
+    pendingNotes: number;
   };
 }
 
@@ -40,6 +43,7 @@ export default async function AdminPage() {
     clubsRes,
     compsRes,
     subsRes,
+    notesRes,
     partRes,
     anRes,
     userCount,
@@ -49,6 +53,7 @@ export default async function AdminPage() {
     pendingCompCount,
     pendingClubCount,
     pendingSubCount,
+    pendingNoteCount,
   ] = await Promise.all([
     supabase.from("users").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("clubs").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
@@ -59,6 +64,11 @@ export default async function AdminPage() {
       .limit(ROW_LIMIT),
     supabase
       .from("community_submissions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(ROW_LIMIT),
+    supabase
+      .from("student_notes")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(ROW_LIMIT),
@@ -85,6 +95,10 @@ export default async function AdminPage() {
       .from("community_submissions")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
+    supabase
+      .from("student_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
   ]);
 
   const data: AdminData = {
@@ -92,6 +106,7 @@ export default async function AdminPage() {
     clubs: (clubsRes.data ?? []) as Club[],
     competitions: (compsRes.data ?? []) as Competition[],
     submissions: (subsRes.data ?? []) as CommunitySubmission[],
+    notes: (notesRes.data ?? []) as StudentNote[],
     participation: (partRes.data ?? []) as Participation[],
     analytics: (anRes.data ?? []) as AdminData["analytics"],
     counts: {
@@ -102,6 +117,7 @@ export default async function AdminPage() {
       pendingCompetitions: pendingCompCount.count ?? 0,
       pendingClubs: pendingClubCount.count ?? 0,
       pendingSubmissions: pendingSubCount.count ?? 0,
+      pendingNotes: pendingNoteCount.count ?? 0,
     },
   };
 

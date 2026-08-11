@@ -7,6 +7,7 @@ Run these (Supabase Studio → SQL Editor, or `psql`) when ready, then tick them
 | --- | --- | --- |
 | ⬜ pending | `migration-hardening.sql` | **Run this first.** Closes a critical privilege-escalation hole plus the moderation, portfolio, roster, uniqueness and public-write gaps found in the security audit. Idempotent → safe to re-run. |
 | ⬜ pending | `migration-competitions-bulk.sql` | Inserts 50 real, verified competitions (pre-approved) into `public.competitions`. Fixed UUIDs + `on conflict (id) do nothing` → safe to re-run. |
+| ⬜ pending | `migration-student-notes.sql` | `student_notes` table + RLS for the landing-page sticky-note wall (students write, admins approve, anon reads approved only). Run **after** `migration-hardening.sql`. Idempotent → safe to re-run. |
 
 ## Notes on `migration-hardening.sql`
 

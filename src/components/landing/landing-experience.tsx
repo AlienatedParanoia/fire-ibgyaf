@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import type { StudentNote } from "@/lib/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
    F.I.R.E — Landing (editorial redesign)
@@ -295,7 +296,7 @@ function FeaturePanel({ f }: { f: Feature }) {
   );
 }
 
-export function LandingExperience() {
+export function LandingExperience({ notes = [] }: { notes?: StudentNote[] }) {
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -464,6 +465,9 @@ export function LandingExperience() {
         })}
       </div>
 
+      {/* STICKY-NOTE WALL — approved student notes */}
+      <StickyWall notes={notes} />
+
       {/* CTA */}
       <section id="cta" data-reveal style={{ position: "relative", padding: "120px 28px", textAlign: "center", overflow: "hidden" }}>
         <span style={{ position: "absolute", top: "14%", left: "12%", color: "#F75C4C", fontSize: 34, animation: "ed-twinkle 3s ease-in-out infinite" }}>✶</span>
@@ -492,6 +496,54 @@ function Stat({ value, label, color, delay, static: isStatic }: { value: string;
       </div>
       <div style={{ marginTop: 8, fontSize: 15, color: "#44413B" }}>{label}</div>
     </div>
+  );
+}
+
+const NOTE_TINTS = ["#FCF3D9", "#FCDAD6", "#E2F2E9", "#EFF4FA", "#F5F0FB"];
+const NOTE_TILTS = [-2, 1.5, -1, 2, -1.5];
+
+function StickyWall({ notes }: { notes: StudentNote[] }) {
+  if (!notes.length) return null;
+  return (
+    <section id="wall" data-reveal style={{ position: "relative", maxWidth: 1240, margin: "0 auto", padding: "84px 28px 40px" }}>
+      <span style={{ position: "absolute", top: 44, right: "10%", color: "#FFD25E", fontSize: 26, animation: "ed-twinkle 3.2s ease-in-out infinite" }}>✶</span>
+      <div className="r-up" style={{ display: "inline-flex", alignItems: "center", gap: 9, fontFamily: HAND, fontSize: 27, color: "#F75C4C", marginBottom: 14, transform: "rotate(-1.5deg)" }}>
+        <span>✶</span> from students, pinned by us
+      </div>
+      <h2 style={{ fontFamily: SERIF, fontWeight: 500, lineHeight: 0.9, letterSpacing: "-0.02em", fontSize: "clamp(2.6rem,6vw,5rem)", margin: "0 0 40px" }}>
+        <span className="r-mask"><span>Notes on the wall<span style={{ color: "#F75C4C" }}>.</span></span></span>
+      </h2>
+      <div className="r-up" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 26, transitionDelay: ".1s" }}>
+        {notes.map((n, i) => (
+          <div
+            key={n.id}
+            className="ed-note"
+            style={{
+              position: "relative",
+              background: NOTE_TINTS[i % NOTE_TINTS.length],
+              border: "1.5px solid #020202",
+              borderRadius: 4,
+              boxShadow: "4px 4px 0 rgba(2,2,2,.12)",
+              padding: "30px 20px 18px",
+              transform: `rotate(${NOTE_TILTS[i % NOTE_TILTS.length]}deg)`,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <span style={{ position: "absolute", top: -9, left: "50%", width: 58, height: 18, transform: "translateX(-50%) rotate(-2deg)", background: "rgba(2,2,2,.08)", border: "1px solid rgba(2,2,2,.14)" }} aria-hidden="true" />
+            <p style={{ fontFamily: HAND, fontSize: 21, lineHeight: 1.25, color: "#020202", margin: 0, flex: 1, overflowWrap: "break-word" }}>{n.body}</p>
+            <div style={{ fontSize: 13, color: "#44413B" }}>
+              — {n.author_name}
+              {n.author_school && <div style={{ fontSize: 12, color: "#837D70" }}>{n.author_school}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="r-up" style={{ marginTop: 36, transitionDelay: ".2s" }}>
+        <Link href="/notes" className="ed-cta" style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 23, color: "#020202", textDecoration: "none" }}>leave your own note →</Link>
+      </div>
+    </section>
   );
 }
 
@@ -528,6 +580,8 @@ const ED_CSS = `
 .ed-root .ed-feat{transition:transform .5s cubic-bezier(.16,.84,.44,1),box-shadow .5s;}
 .ed-root .ed-feat:hover{transform:translateY(-6px);}
 .ed-root .ed-rail-item{transition:color .3s,transform .3s;}
+.ed-root .ed-note{transition:transform .35s cubic-bezier(.16,.84,.44,1),box-shadow .35s;}
+.ed-root .ed-note:hover{transform:rotate(0deg) translateY(-6px)!important;box-shadow:6px 6px 0 rgba(2,2,2,.16);}
 @keyframes ed-marq{to{transform:translateX(-50%);}}
 @keyframes ed-bob{0%,100%{transform:translateY(0);}50%{transform:translateY(8px);}}
 @keyframes ed-float-a{0%,100%{transform:translate(0,0) rotate(-3deg);}50%{transform:translate(0,-16px) rotate(-3deg);}}

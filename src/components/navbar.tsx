@@ -31,6 +31,7 @@ const NAV_LINKS = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/profiles", label: "Profiles" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/notes", label: "Notes" },
 ];
 
 export function Navbar({ profile }: { profile: AppUser | null }) {

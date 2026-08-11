@@ -128,3 +128,14 @@ export interface CommunitySubmission {
   admin_notes: string | null;
   created_at: string;
 }
+
+export interface StudentNote {
+  id: string;
+  user_id: string;
+  author_name: string;
+  author_school: string | null;
+  body: string;
+  status: SubmissionStatus;
+  admin_notes: string | null;
+  created_at: string;
+}

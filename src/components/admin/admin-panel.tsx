@@ -19,6 +19,7 @@ import {
   ClipboardList,
   ListChecks,
   Bell,
+  StickyNote,
 } from "lucide-react";
 import type { AdminData } from "@/app/admin/page";
 import { cn, formatDate } from "@/lib/utils";
@@ -38,6 +39,7 @@ import {
 import { UsersSection, SectionHeading } from "./users-section";
 import { ApprovalsSection } from "./approvals-section";
 import { SubmissionsSection } from "./submissions-section";
+import { NotesSection } from "./notes-section";
 import { SettingsSection } from "./settings-section";
 import { CompetitionsManage } from "./competitions-manage";
 import { ClubsManage } from "./clubs-manage";
@@ -54,6 +56,7 @@ type Section =
   | "comp-approvals"
   | "club-approvals"
   | "submissions"
+  | "notes"
   | "analytics"
   | "settings";
 
@@ -90,6 +93,7 @@ export function AdminPanel({ data }: { data: AdminData }) {
     { key: "comp-approvals", label: "Competition Approvals",  icon: ClipboardList, badge: data.counts.pendingCompetitions },
     { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: data.counts.pendingClubs },
     { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: data.counts.pendingSubmissions },
+    { key: "notes",          label: "Student Notes",          icon: StickyNote,  badge: data.counts.pendingNotes },
     { key: "analytics",      label: "Analytics",              icon: BarChart3 },
     { key: "settings",       label: "Settings",               icon: Settings },
   ];
@@ -167,6 +171,7 @@ export function AdminPanel({ data }: { data: AdminData }) {
           {section === "submissions"    && (
             <SubmissionsSection submissions={data.submissions} onChanged={refresh} />
           )}
+          {section === "notes"          && <NotesSection notes={data.notes} onChanged={refresh} />}
           {section === "analytics"      && <Analytics data={data} />}
           {section === "settings"       && <SettingsSection />}
         </motion.div>

@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Calendar, Mail, Phone, User, X, Clock, Pencil, Heart, Users as UsersIcon } from "lucide-react";
+import { Users, Calendar, Mail, Phone, User, X, Clock, Pencil, Heart, Building2, Users as UsersIcon } from "lucide-react";
 import { Select } from "@/components/ui/input";
 import { useFocusTrap, useModalStack } from "@/components/ui/dialog";
 import { JoinClubButton } from "./join-club-button";
@@ -36,6 +36,31 @@ export function ClubsGrid({
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [editing, setEditing] = React.useState<Club | null>(null);
   const [savedOnly, setSavedOnly] = React.useState(false);
+  const [school, setSchool] = React.useState("");
+
+  // Remember the chosen school between visits (best-effort: storage can be blocked).
+  React.useEffect(() => {
+    try {
+      setSchool(localStorage.getItem("fire-school") ?? "");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function chooseSchool(next: string) {
+    setSchool(next);
+    try {
+      if (next) localStorage.setItem("fire-school", next);
+      else localStorage.removeItem("fire-school");
+    } catch {
+      /* ignore */
+    }
+  }
+  const schools = React.useMemo(
+    () => Array.from(new Set(clubs.map((c) => c.school).filter((s): s is string => !!s))).sort(),
+    [clubs]
+  );
+  // A remembered school with no clubs (or from another device) shouldn't hide everything.
+  const activeSchool = schools.includes(school) ? school : "";
   const { isFavorite } = useFavorites();
 
   // Offer the standard categories plus any custom ones that actually appear on a club.
@@ -44,7 +69,10 @@ export function ClubsGrid({
     return [...CLUB_CATEGORIES.filter((c) => clubs.some((x) => x.category === c)), ...Array.from(new Set(extra))];
   }, [clubs]);
   const filtered = clubs.filter(
-    (c) => (!category || c.category === category) && (!savedOnly || isFavorite("club", c.id))
+    (c) =>
+      (!activeSchool || c.school === activeSchool) &&
+      (!category || c.category === category) &&
+      (!savedOnly || isFavorite("club", c.id))
   );
   const active = clubs.find((c) => c.id === activeId) ?? null;
 
@@ -56,7 +84,23 @@ export function ClubsGrid({
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+          <Select
+            value={activeSchool}
+            onChange={(e) => chooseSchool(e.target.value)}
+            aria-label="School"
+            className="max-w-[220px] pl-9"
+          >
+            <option value="">All schools</option>
+            {schools.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+        </div>
         <Select value={category} onChange={(e) => setCategory(e.target.value)} className="max-w-xs">
           <option value="">All categories</option>
           {categoryOptions.map((c) => (

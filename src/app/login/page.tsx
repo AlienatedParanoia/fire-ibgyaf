@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { GoogleButton } from "@/components/auth/google-button";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -65,6 +66,7 @@ export default function LoginPage() {
 
         <div className="rounded-2xl border border-ink/10 bg-panel p-6 shadow-hard-card sm:p-8">
           {!isSupabaseConfigured && <SetupNotice />}
+          <GoogleButton label="Log in with Google" />
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>

@@ -15,6 +15,8 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InterestsPrompt } from "@/components/interests-prompt";
 import { RequestLeaderCard } from "@/components/dashboard/request-leader-card";
+import { CompleteProfileCard } from "@/components/dashboard/complete-profile-card";
+import { DeleteAccountCard } from "@/components/dashboard/delete-account-card";
 import { daysUntil, deadlineUrgency, formatDate, cn } from "@/lib/utils";
 import type { Competition, Participation, CustomActivity, RoleRequest } from "@/lib/types";
 
@@ -124,6 +126,10 @@ export default async function DashboardPage() {
 
       <InterestsPrompt initialInterests={profile?.interests ?? []} />
 
+      {profile && (!profile.school || !profile.grade) && (
+        <CompleteProfileCard userId={uid} school={profile.school} grade={profile.grade} />
+      )}
+
       {isStudent && (
         <RequestLeaderCard
           userId={uid}
@@ -223,6 +229,8 @@ export default async function DashboardPage() {
           )}
         </section>
       </div>
+
+      {profile && <DeleteAccountCard email={profile.email} />}
     </div>
   );
 }

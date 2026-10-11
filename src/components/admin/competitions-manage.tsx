@@ -9,6 +9,7 @@ import { CategoryBadge } from "@/components/competitions/badges";
 import { CompetitionFormDialog } from "@/components/competitions/competition-form-dialog";
 import { cn, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { SectionHeading } from "./users-section";
 import type { Club, Competition } from "@/lib/types";
 
@@ -63,6 +64,7 @@ export function CompetitionsManage({
       setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: !next } : x));
       return;
     }
+    void logAudit(next ? "competition.approve" : "competition.unapprove", "competition", c.id, { title: c.title });
     toast.success(next ? "Approved" : "Unapproved");
     onChanged?.();
   }
@@ -78,6 +80,7 @@ export function CompetitionsManage({
       setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_featured: !next } : x));
       return;
     }
+    void logAudit(next ? "competition.feature" : "competition.unfeature", "competition", c.id, { title: c.title });
     toast.success(next ? "Featured" : "Unfeatured");
     onChanged?.();
   }
@@ -89,6 +92,7 @@ export function CompetitionsManage({
     setDeleting(c.id);
     const { error } = await supabase.from("competitions").delete().eq("id", c.id);
     if (error) { toast.error(error.message); setDeleting(null); return; }
+    void logAudit("competition.delete", "competition", c.id, { title: c.title });
     setItems((l) => l.filter((x) => x.id !== c.id));
     toast.success("Deleted");
     setDeleting(null);

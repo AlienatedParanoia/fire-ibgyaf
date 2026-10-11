@@ -10,6 +10,7 @@ import { ClubFormDialog } from "@/components/clubs/club-form-dialog";
 import { ClubMembersDialog } from "./club-members-panel";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { SectionHeading } from "./users-section";
 import type { AppUser, Club } from "@/lib/types";
 
@@ -76,6 +77,7 @@ export function ClubsManage({
       setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: !next } : x));
       return;
     }
+    void logAudit(next ? "club.approve" : "club.unapprove", "club", c.id, { name: c.name });
     toast.success(next ? "Approved" : "Unapproved");
     onChanged?.();
   }
@@ -87,6 +89,7 @@ export function ClubsManage({
     setDeleting(c.id);
     const { error } = await supabase.from("clubs").delete().eq("id", c.id);
     if (error) { toast.error(error.message); setDeleting(null); return; }
+    void logAudit("club.delete", "club", c.id, { name: c.name });
     setItems((l) => l.filter((x) => x.id !== c.id));
     toast.success("Deleted");
     setDeleting(null);

@@ -178,3 +178,37 @@ export interface Favorite {
   item_id: string;
   created_at: string;
 }
+
+export interface AuditEntry {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RoleRequest {
+  id: string;
+  user_id: string;
+  requested_role: "club_leader";
+  club_id: string | null;
+  message: string | null;
+  status: SubmissionStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export type ClubRoleType = "leader" | "officer" | "core" | "bod" | "member";
+
+export interface ClubRole {
+  id: string;
+  club_id: string;
+  display_name: string;
+  role: ClubRoleType;
+  title: string | null;
+  assigned_by: string | null;
+  created_at: string;
+}

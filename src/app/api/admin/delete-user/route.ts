@@ -29,8 +29,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
   }
 
+  // Read the email first: the profile row disappears with the auth user.
+  const { data: target } = await admin.from("users").select("email").eq("id", id).maybeSingle();
+
   const { error } = await admin.auth.admin.deleteUser(id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Best effort — the deletion already happened, so a failed log must not turn it into an error.
+  await admin.from("admin_audit_log").insert({
+    actor_id: authUser.id,
+    action: "user.delete",
+    target_type: "user",
+    target_id: id,
+    details: { email: target?.email ?? null },
+  });
 
   return NextResponse.json({ ok: true });
 }

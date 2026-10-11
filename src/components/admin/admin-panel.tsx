@@ -21,6 +21,8 @@ import {
   Bell,
   StickyNote,
   Megaphone,
+  Crown,
+  ScrollText,
 } from "lucide-react";
 import type { AdminData } from "@/app/admin/page";
 import { cn, formatDate } from "@/lib/utils";
@@ -47,6 +49,8 @@ import { ClubsManage } from "./clubs-manage";
 import { ParticipationSection } from "./participation-section";
 import { NotificationsSection } from "./notifications-section";
 import { AnnouncementsSection } from "./announcements-section";
+import { RoleRequestsSection } from "./role-requests-section";
+import { AuditSection } from "./audit-section";
 
 type Section =
   | "overview"
@@ -56,6 +60,8 @@ type Section =
   | "participation"
   | "notifications"
   | "announcements"
+  | "role-requests"
+  | "audit"
   | "comp-approvals"
   | "club-approvals"
   | "submissions"
@@ -98,7 +104,9 @@ export function AdminPanel({ data }: { data: AdminData }) {
     { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: data.counts.pendingClubs },
     { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: data.counts.pendingSubmissions },
     { key: "notes",          label: "Student Notes",          icon: StickyNote,  badge: data.counts.pendingNotes },
+    { key: "role-requests",  label: "Role Requests",          icon: Crown,       badge: data.counts.pendingRoleRequests },
     { key: "analytics",      label: "Analytics",              icon: BarChart3 },
+    { key: "audit",          label: "Audit Log",              icon: ScrollText },
     { key: "settings",       label: "Settings",               icon: Settings },
   ];
 
@@ -174,6 +182,15 @@ export function AdminPanel({ data }: { data: AdminData }) {
               onChanged={refresh}
             />
           )}
+          {section === "role-requests"  && (
+            <RoleRequestsSection
+              requests={data.roleRequests}
+              users={data.users}
+              clubs={data.clubs}
+              onChanged={refresh}
+            />
+          )}
+          {section === "audit"          && <AuditSection entries={data.auditLog} users={data.users} />}
           {section === "comp-approvals" && (
             <ApprovalsSection kind="competition" competitions={data.competitions} onChanged={refresh} />
           )}

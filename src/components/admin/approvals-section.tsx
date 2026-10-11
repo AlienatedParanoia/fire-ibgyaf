@@ -9,6 +9,7 @@ import { CategoryBadge } from "@/components/competitions/badges";
 import { SectionHeading } from "./users-section";
 import { formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import type { Competition, Club } from "@/lib/types";
 
 type Kind = "competition" | "club";
@@ -35,6 +36,7 @@ export function ApprovalsSection({
       kind === "competition" ? { is_approved: true, is_featured: featured } : { is_approved: true };
     const { error } = await supabase.from(table).update(patch).eq("id", id);
     if (error) return toast.error(error.message);
+    void logAudit(`${kind}.approve`, kind, id, { featured });
     drop(id);
     toast.success(`Approved${featured ? " & featured" : ""}`);
     onChanged?.();
@@ -63,6 +65,7 @@ export function ApprovalsSection({
 
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) return toast.error(error.message);
+    void logAudit(`${kind}.reject`, kind, id, { note: note.trim() || null });
     drop(id);
     toast.success(note.trim() ? `Rejected — ${note}` : "Rejected");
     onChanged?.();

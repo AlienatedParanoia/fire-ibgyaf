@@ -10,6 +10,7 @@ import { PriorityBadge } from "@/components/announcements/priority-badge";
 import { SectionHeading } from "./users-section";
 import { cn, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import type { Announcement, AnnouncementPriority, Club, SubmissionStatus } from "@/lib/types";
 
 const STATUS_STYLE: Record<SubmissionStatus, string> = {
@@ -62,6 +63,7 @@ export function AnnouncementsSection({
       .single();
     setSaving(false);
     if (error) return toast.error(error.message);
+    void logAudit("announcement.publish", "announcement", (data as Announcement).id, { title: title.trim() });
     setItems((list) => [data as Announcement, ...list]);
     setTitle("");
     setContent("");
@@ -79,6 +81,7 @@ export function AnnouncementsSection({
     setBusy(null);
     if (error) return toast.error(error.message);
     setItems((list) => list.map((x) => (x.id === a.id ? { ...x, status } : x)));
+    void logAudit(`announcement.${status}`, "announcement", a.id, { title: a.title });
     toast.success(status === "approved" ? "Approved — it's live" : "Rejected");
     onChanged?.();
   }
@@ -92,6 +95,7 @@ export function AnnouncementsSection({
     const { error } = await supabase.from("announcements").delete().eq("id", a.id);
     setBusy(null);
     if (error) return toast.error(error.message);
+    void logAudit("announcement.delete", "announcement", a.id, { title: a.title });
     setItems((list) => list.filter((x) => x.id !== a.id));
     toast.success("Deleted");
     onChanged?.();

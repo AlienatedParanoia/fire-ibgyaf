@@ -8,6 +8,8 @@ import type {
   Participation,
   StudentNote,
   Announcement,
+  AuditEntry,
+  RoleRequest,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,8 @@ export interface AdminData {
   submissions: CommunitySubmission[];
   notes: StudentNote[];
   announcements: Announcement[];
+  auditLog: AuditEntry[];
+  roleRequests: RoleRequest[];
   userId: string;
   participation: Participation[];
   analytics: { id: string; event_type: string; created_at: string; user_id: string | null }[];
@@ -36,6 +40,7 @@ export interface AdminData {
     pendingSubmissions: number;
     pendingNotes: number;
     pendingAnnouncements: number;
+    pendingRoleRequests: number;
   };
 }
 
@@ -60,6 +65,9 @@ export default async function AdminPage() {
     pendingNoteCount,
     annRes,
     pendingAnnCount,
+    auditRes,
+    roleReqRes,
+    pendingRoleReqCount,
   ] = await Promise.all([
     supabase.from("users").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("clubs").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
@@ -107,6 +115,9 @@ export default async function AdminPage() {
       .eq("status", "pending"),
     supabase.from("announcements").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("announcements").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(300),
+    supabase.from("role_requests").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
+    supabase.from("role_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
   const data: AdminData = {
@@ -116,6 +127,8 @@ export default async function AdminPage() {
     submissions: (subsRes.data ?? []) as CommunitySubmission[],
     notes: (notesRes.data ?? []) as StudentNote[],
     announcements: (annRes.data ?? []) as Announcement[],
+    auditLog: (auditRes.data ?? []) as AuditEntry[],
+    roleRequests: (roleReqRes.data ?? []) as RoleRequest[],
     userId: authUser!.id,
     participation: (partRes.data ?? []) as Participation[],
     analytics: (anRes.data ?? []) as AdminData["analytics"],
@@ -129,6 +142,7 @@ export default async function AdminPage() {
       pendingSubmissions: pendingSubCount.count ?? 0,
       pendingNotes: pendingNoteCount.count ?? 0,
       pendingAnnouncements: pendingAnnCount.count ?? 0,
+      pendingRoleRequests: pendingRoleReqCount.count ?? 0,
     },
   };
 

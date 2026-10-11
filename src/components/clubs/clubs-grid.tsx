@@ -13,18 +13,20 @@ import { ClubChips, ClubProfile } from "./club-profile";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { useFavorites } from "@/components/favorites/favorites-provider";
 import { CLUB_CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
-import type { Club, Competition } from "@/lib/types";
+import type { Club, ClubRole, Competition } from "@/lib/types";
 
 const BANNER_GRADIENT = "linear-gradient(135deg, #F75C4C 0%, #E0402F 70%, #020202 240%)";
 
 export function ClubsGrid({
   clubs: initialClubs,
   compsByClub = {},
+  teamByClub = {},
   isAdmin = false,
   signedIn = false,
 }: {
   clubs: Club[];
   compsByClub?: Record<string, Competition[]>;
+  teamByClub?: Record<string, ClubRole[]>;
   isAdmin?: boolean;
   signedIn?: boolean;
 }) {
@@ -108,6 +110,7 @@ export function ClubsGrid({
           <ClubModal
             club={active}
             comps={compsByClub[active.id] ?? []}
+            team={teamByClub[active.id] ?? []}
             onClose={() => setActiveId(null)}
             isAdmin={isAdmin}
             signedIn={signedIn}
@@ -240,6 +243,7 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
 function ClubModal({
   club,
   comps,
+  team,
   onClose,
   isAdmin,
   signedIn,
@@ -247,6 +251,7 @@ function ClubModal({
 }: {
   club: Club;
   comps: Competition[];
+  team: ClubRole[];
   onClose: () => void;
   isAdmin: boolean;
   signedIn: boolean;
@@ -336,7 +341,7 @@ function ClubModal({
             <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{club.description}</p>
           )}
 
-          <ClubProfile club={club} />
+          <ClubProfile club={club} team={team} />
 
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />

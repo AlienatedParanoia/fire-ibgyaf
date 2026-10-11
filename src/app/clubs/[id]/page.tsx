@@ -10,7 +10,7 @@ import { JoinClubButton } from "@/components/clubs/join-club-button";
 import { ClubChips, ClubProfile } from "@/components/clubs/club-profile";
 import { deadlineUrgency, formatDate, cn, optimizableImage } from "@/lib/utils";
 import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS } from "@/lib/clubs";
-import type { Club, Competition } from "@/lib/types";
+import type { Club, ClubRole, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +19,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://projectfire.dev";
 // Cached so generateMetadata and the page itself share one pair of queries.
 const getClub = cache(async (id: string) => {
   const supabase = getSupabaseServer();
-  if (!supabase) return { club: null as Club | null, comps: [] as Competition[], signedIn: false };
+  if (!supabase) return { club: null as Club | null, comps: [] as Competition[], team: [] as ClubRole[], signedIn: false };
   // getSession only parses the auth cookie (no network call).
   const { data: session } = await supabase.auth.getSession();
   const signedIn = !!session.session;
-  const [{ data: club }, { data: comps }] = await Promise.all([
+  const [{ data: club }, { data: comps }, { data: team }] = await Promise.all([
     supabase
       .from("clubs")
       .select(signedIn ? `${CLUB_PUBLIC_COLUMNS}, ${CLUB_CONTACT_COLUMNS}` : CLUB_PUBLIC_COLUMNS)
@@ -35,8 +35,9 @@ const getClub = cache(async (id: string) => {
       .eq("club_id", id)
       .eq("is_approved", true)
       .order("deadline", { ascending: true }),
+    supabase.from("club_roles").select("*").eq("club_id", id),
   ]);
-  return { club: club as unknown as Club | null, comps: (comps ?? []) as Competition[], signedIn };
+  return { club: club as unknown as Club | null, comps: (comps ?? []) as Competition[], team: (team ?? []) as ClubRole[], signedIn };
 });
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -64,7 +65,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ClubDetailPage({ params }: { params: { id: string } }) {
-  const { club, comps, signedIn } = await getClub(params.id);
+  const { club, comps, team, signedIn } = await getClub(params.id);
   if (!club) notFound();
 
   return (
@@ -123,7 +124,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             </p>
           )}
 
-          <ClubProfile club={club} />
+          <ClubProfile club={club} team={team} />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {club.meeting_schedule && (

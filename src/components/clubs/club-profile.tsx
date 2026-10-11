@@ -1,6 +1,7 @@
 import { Globe, Instagram, Linkedin, GraduationCap, Building2 } from "lucide-react";
 import { cn, socialUrl } from "@/lib/utils";
-import type { Club } from "@/lib/types";
+import { CLUB_ROLE_LABELS, groupTeam } from "@/lib/club-roles";
+import type { Club, ClubRole } from "@/lib/types";
 
 /** Open/closed + school + grade chips shown next to the club name. */
 export function ClubChips({ club }: { club: Club }) {
@@ -30,7 +31,7 @@ export function ClubChips({ club }: { club: Club }) {
 }
 
 /** Vision, mission, leadership team and social links for a club. Renders nothing for empty fields. */
-export function ClubProfile({ club }: { club: Club }) {
+export function ClubProfile({ club, team = [] }: { club: Club; team?: ClubRole[] }) {
   const leaders = [
     ["President", club.president],
     ["Vice President", club.vice_president],
@@ -46,7 +47,7 @@ export function ClubProfile({ club }: { club: Club }) {
     ] as const
   ).filter(([, v]) => !!v?.trim());
 
-  if (!club.vision && !club.mission && leaders.length === 0 && links.length === 0) return null;
+  if (!club.vision && !club.mission && leaders.length === 0 && links.length === 0 && team.length === 0) return null;
 
   return (
     <div className="mt-6 space-y-5">
@@ -65,6 +66,27 @@ export function ClubProfile({ club }: { club: Club }) {
               <div key={role} className="rounded-[12px] border-[1.5px] border-ink/12 bg-paper p-3">
                 <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">{role}</p>
                 <p className="mt-1 text-[13.5px] font-medium text-ink">{name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {team.length > 0 && (
+        <div>
+          <p className="mb-2 text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">Team</p>
+          <div className="space-y-3">
+            {groupTeam(team).map((g) => (
+              <div key={g.role}>
+                <p className="mb-1 text-xs font-semibold text-ink-soft">{CLUB_ROLE_LABELS[g.role]}</p>
+                <div className="flex flex-wrap gap-2">
+                  {g.people.map((p) => (
+                    <span key={p.id} className="rounded-full bg-beige px-3 py-1 text-[13px] text-ink">
+                      {p.display_name}
+                      {p.title && <span className="ml-1.5 text-ink-faint">· {p.title}</span>}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

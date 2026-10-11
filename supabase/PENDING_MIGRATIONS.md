@@ -11,6 +11,7 @@ Run these (Supabase Studio → SQL Editor, or `psql`) when ready, then tick them
 | ⏳ pending | `migration-lovable-clubs.sql` | Adds vision / mission / leadership / social / grade / open-closed / school / contact_phone columns to `clubs`, upserts the 16 GIIS clubs from the Lovable app (same UUIDs), and **revokes anonymous read of `contact_email`/`contact_phone`** (column-level grant, like the Lovable app). Run **before** deploying this code. Idempotent. Run **after** `migration-hardening.sql`. |
 | ⏳ pending | `private/club-contacts.local.sql` | **Gitignored** (repo is public). Copies club contact phones/emails from the Lovable app. Run right after `migration-lovable-clubs.sql`. Signed-out visitors can't read these columns. |
 | ⏳ pending | `migration-announcements-favorites.sql` | `announcements` (admin publishes; club leaders submit as pending) and `favorites` tables with RLS. Run after `migration-hardening.sql`. |
+| ⏳ pending | `migration-roles-audit.sql` | `admin_audit_log`, `role_requests` (+ atomic `review_role_request()` RPC) and `club_roles`. Needs `migration-features.sql` (notifications) and `migration-hardening.sql` applied first. |
 
 ## Notes on `migration-hardening.sql`
 

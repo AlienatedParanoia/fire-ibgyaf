@@ -24,6 +24,7 @@ import { CategoryBadge } from "@/components/competitions/badges";
 import { CATEGORIES, cn, formatDate, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { LeaderAnnouncements } from "./leader-announcements";
+import { ClubTeamManager } from "@/components/clubs/club-team-manager";
 import type {
   Announcement,
   Club,
@@ -139,7 +140,18 @@ export function ClubLeaderDashboard({
       </div>
 
       {tab === "club" && (
-        <ClubForm userId={userId} club={club} onSaved={setClub} />
+        <div className="space-y-8">
+          <ClubForm userId={userId} club={club} onSaved={setClub} />
+          {club && (
+            <section className="max-w-2xl rounded-2xl border border-charcoal/10 bg-white p-6 shadow-sm">
+              <h3 className="mb-1 font-heading text-lg font-semibold text-charcoal">Club team</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Officers, core members and board shown on your public club page.
+              </p>
+              <ClubTeamManager clubId={club.id} />
+            </section>
+          )}
+        </div>
       )}
 
       {tab === "competitions" && (

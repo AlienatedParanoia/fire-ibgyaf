@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/supabase/server";
 import { getSupabasePublic } from "@/lib/supabase/public";
 import { ClubsGrid } from "@/components/clubs/clubs-grid";
 import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS } from "@/lib/clubs";
-import type { Club, Competition } from "@/lib/types";
+import type { Club, ClubRole, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
 const getPublicClubs = unstable_cache(
   async () => {
     const supabase = getSupabasePublic();
-    if (!supabase) return { clubs: [] as Club[], compsByClub: {} as Record<string, Competition[]> };
+    if (!supabase) {
+      return { clubs: [] as Club[], compsByClub: {} as Record<string, Competition[]>, teamByClub: {} as Record<string, ClubRole[]> };
+    }
 
     const { data: clubs } = await supabase
       .from("clubs")
@@ -35,14 +37,23 @@ const getPublicClubs = unstable_cache(
         (compsByClub[comp.club_id] ??= []).push(comp);
       }
     }
-    return { clubs: clubList, compsByClub };
+    // Table may not exist until migration-roles-audit.sql is run; an error just means no team data.
+    const teamByClub: Record<string, ClubRole[]> = {};
+    if (clubList.length) {
+      const { data: roles } = await supabase
+        .from("club_roles")
+        .select("*")
+        .in("club_id", clubList.map((c) => c.id));
+      for (const r of (roles ?? []) as ClubRole[]) (teamByClub[r.club_id] ??= []).push(r);
+    }
+    return { clubs: clubList, compsByClub, teamByClub };
   },
   ["clubs-page"],
   { revalidate: 60 }
 );
 
 export default async function ClubsPage() {
-  const [{ clubs: publicClubs, compsByClub }, { profile, supabase }] = await Promise.all([
+  const [{ clubs: publicClubs, compsByClub, teamByClub }, { profile, supabase }] = await Promise.all([
     getPublicClubs(),
     getCurrentUser(),
   ]);
@@ -75,7 +86,7 @@ export default async function ClubsPage() {
           compete in, and join in a tap.
         </p>
       </header>
-      <ClubsGrid clubs={clubs} compsByClub={compsByClub} isAdmin={isAdmin} signedIn={signedIn} />
+      <ClubsGrid clubs={clubs} compsByClub={compsByClub} teamByClub={teamByClub} isAdmin={isAdmin} signedIn={signedIn} />
     </div>
   );
 }

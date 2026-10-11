@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Mail, User, Calendar, Users2, ArrowLeft, CalendarClock } from "lucide-react";
+import { Mail, Phone, User, Calendar, Users2, ArrowLeft, CalendarClock } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { JoinClubButton } from "@/components/clubs/join-club-button";
+import { ClubChips, ClubProfile } from "@/components/clubs/club-profile";
 import { deadlineUrgency, formatDate, cn, optimizableImage } from "@/lib/utils";
+import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS } from "@/lib/clubs";
 import type { Club, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +19,16 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://projectfire.dev";
 // Cached so generateMetadata and the page itself share one pair of queries.
 const getClub = cache(async (id: string) => {
   const supabase = getSupabaseServer();
-  if (!supabase) return { club: null as Club | null, comps: [] as Competition[] };
+  if (!supabase) return { club: null as Club | null, comps: [] as Competition[], signedIn: false };
+  // getSession only parses the auth cookie (no network call).
+  const { data: session } = await supabase.auth.getSession();
+  const signedIn = !!session.session;
   const [{ data: club }, { data: comps }] = await Promise.all([
-    supabase.from("clubs").select("*").eq("id", id).maybeSingle(),
+    supabase
+      .from("clubs")
+      .select(signedIn ? `${CLUB_PUBLIC_COLUMNS}, ${CLUB_CONTACT_COLUMNS}` : CLUB_PUBLIC_COLUMNS)
+      .eq("id", id)
+      .maybeSingle(),
     supabase
       .from("competitions")
       .select("*")
@@ -27,7 +36,7 @@ const getClub = cache(async (id: string) => {
       .eq("is_approved", true)
       .order("deadline", { ascending: true }),
   ]);
-  return { club: club as Club | null, comps: (comps ?? []) as Competition[] };
+  return { club: club as unknown as Club | null, comps: (comps ?? []) as Competition[], signedIn };
 });
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -55,7 +64,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ClubDetailPage({ params }: { params: { id: string } }) {
-  const { club, comps } = await getClub(params.id);
+  const { club, comps, signedIn } = await getClub(params.id);
   if (!club) notFound();
 
   return (
@@ -104,11 +113,17 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             <JoinClubButton clubId={club.id} clubName={club.name} />
           </div>
 
+          <div className="mt-4">
+            <ClubChips club={club} />
+          </div>
+
           {club.description && (
             <p className="mt-6 whitespace-pre-line leading-relaxed text-charcoal/90">
               {club.description}
             </p>
           )}
+
+          <ClubProfile club={club} />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {club.meeting_schedule && (
@@ -117,8 +132,17 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             {club.contact_person && (
               <InfoCard icon={<User className="h-4 w-4" />} label="Contact" value={club.contact_person} />
             )}
-            {club.contact_email && (
-              <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value={club.contact_email} />
+            {signedIn ? (
+              <>
+                {club.contact_email && (
+                  <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value={club.contact_email} />
+                )}
+                {club.contact_phone && (
+                  <InfoCard icon={<Phone className="h-4 w-4" />} label="Phone" value={club.contact_phone} />
+                )}
+              </>
+            ) : (
+              <InfoCard icon={<Mail className="h-4 w-4" />} label="Contact details" value="Log in to see email & phone" />
             )}
           </div>
         </div>

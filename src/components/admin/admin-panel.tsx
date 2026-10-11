@@ -20,6 +20,7 @@ import {
   ListChecks,
   Bell,
   StickyNote,
+  Megaphone,
 } from "lucide-react";
 import type { AdminData } from "@/app/admin/page";
 import { cn, formatDate } from "@/lib/utils";
@@ -45,6 +46,7 @@ import { CompetitionsManage } from "./competitions-manage";
 import { ClubsManage } from "./clubs-manage";
 import { ParticipationSection } from "./participation-section";
 import { NotificationsSection } from "./notifications-section";
+import { AnnouncementsSection } from "./announcements-section";
 
 type Section =
   | "overview"
@@ -53,6 +55,7 @@ type Section =
   | "clubs"
   | "participation"
   | "notifications"
+  | "announcements"
   | "comp-approvals"
   | "club-approvals"
   | "submissions"
@@ -90,6 +93,7 @@ export function AdminPanel({ data }: { data: AdminData }) {
     { key: "clubs",          label: "Manage Clubs",           icon: Building2,   badge: data.counts.clubs },
     { key: "participation",  label: "Participation",          icon: ListChecks,  badge: data.counts.participation },
     { key: "notifications",  label: "Send Notification",      icon: Bell },
+    { key: "announcements",  label: "Announcements",          icon: Megaphone,   badge: data.counts.pendingAnnouncements },
     { key: "comp-approvals", label: "Competition Approvals",  icon: ClipboardList, badge: data.counts.pendingCompetitions },
     { key: "club-approvals", label: "Club Approvals",         icon: PenSquare,   badge: data.counts.pendingClubs },
     { key: "submissions",    label: "Submissions",            icon: Inbox,       badge: data.counts.pendingSubmissions },
@@ -162,6 +166,14 @@ export function AdminPanel({ data }: { data: AdminData }) {
             />
           )}
           {section === "notifications"  && <NotificationsSection users={data.users} onChanged={refresh} />}
+          {section === "announcements"  && (
+            <AnnouncementsSection
+              announcements={data.announcements}
+              clubs={data.clubs}
+              userId={data.userId}
+              onChanged={refresh}
+            />
+          )}
           {section === "comp-approvals" && (
             <ApprovalsSection kind="competition" competitions={data.competitions} onChanged={refresh} />
           )}

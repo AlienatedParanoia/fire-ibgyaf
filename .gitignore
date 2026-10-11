@@ -27,3 +27,6 @@ next-env.d.ts
 
 # design-sync: regenerated each sync (see .design-sync/NOTES.md)
 ds-tailwind-compiled.css
+
+# private data that must not reach the public repo
+/supabase/private/

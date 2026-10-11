@@ -96,6 +96,26 @@ export const CATEGORIES = [
   "Other",
 ] as const;
 
+/** Club categories: the shared competition categories plus the ones the GIIS clubs use. */
+export const CLUB_CATEGORIES = [
+  ...CATEGORIES,
+  "Arts & Culture",
+  "Service",
+  "Academic",
+  "Health & Science",
+  "Lifestyle",
+] as const;
+
+/** Turn a social handle or URL into a safe https link, or null if it isn't one. */
+export function socialUrl(kind: "instagram" | "linkedin" | "website", value?: string | null): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return safeHttpUrl(v);
+  if (kind === "website") return /^[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(v) ? `https://${v}` : null;
+  if (kind === "instagram" && /^@?[\w.]+$/.test(v)) return `https://instagram.com/${v.replace(/^@/, "")}`;
+  return null;
+}
+
 /** Deterministic brand-ish colour for a category badge. */
 export function categoryColor(category?: string | null): string {
   switch ((category || "").toLowerCase()) {

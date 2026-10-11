@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { getSupabasePublic } from "@/lib/supabase/public";
 import { ClubsGrid } from "@/components/clubs/clubs-grid";
+import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS } from "@/lib/clubs";
 import type { Club, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,11 @@ const getPublicClubs = unstable_cache(
 
     const { data: clubs } = await supabase
       .from("clubs")
-      .select("*")
+      .select(CLUB_PUBLIC_COLUMNS)
       .eq("is_approved", true)
-      .order("member_count", { ascending: false });
-    const clubList = (clubs ?? []) as Club[];
+      .order("member_count", { ascending: false })
+      .order("name", { ascending: true });
+    const clubList = (clubs ?? []) as unknown as Club[];
 
     const compsByClub: Record<string, Competition[]> = {};
     if (clubList.length) {
@@ -40,8 +42,22 @@ const getPublicClubs = unstable_cache(
 );
 
 export default async function ClubsPage() {
-  const [{ clubs, compsByClub }, { profile }] = await Promise.all([getPublicClubs(), getCurrentUser()]);
+  const [{ clubs: publicClubs, compsByClub }, { profile, supabase }] = await Promise.all([
+    getPublicClubs(),
+    getCurrentUser(),
+  ]);
   const isAdmin = profile?.role === "admin";
+  const signedIn = !!profile;
+
+  // Contact details are signed-in only, so they can't live in the shared cache above.
+  let clubs = publicClubs;
+  if (signedIn && supabase) {
+    const { data } = await supabase.from("clubs").select(`id, ${CLUB_CONTACT_COLUMNS}`);
+    const contacts = new Map(
+      ((data ?? []) as unknown as Pick<Club, "id" | "contact_email" | "contact_phone">[]).map((c) => [c.id, c])
+    );
+    clubs = publicClubs.map((c) => ({ ...c, ...contacts.get(c.id) }));
+  }
   return (
     <div className="container py-10">
       <header className="mb-8">
@@ -59,7 +75,7 @@ export default async function ClubsPage() {
           compete in, and join in a tap.
         </p>
       </header>
-      <ClubsGrid clubs={clubs} compsByClub={compsByClub} isAdmin={isAdmin} />
+      <ClubsGrid clubs={clubs} compsByClub={compsByClub} isAdmin={isAdmin} signedIn={signedIn} />
     </div>
   );
 }

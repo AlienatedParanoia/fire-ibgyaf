@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer";
 import { HideOnAuthRoutes } from "@/components/hide-on-auth-routes";
 import { PageTransition } from "@/components/page-transition";
 import { RouteLoader } from "@/components/route-loader";
+import { FavoritesProvider } from "@/components/favorites/favorites-provider";
 import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
@@ -26,16 +27,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable} ${hand.variable}`}>
       <body className="flex min-h-screen flex-col bg-background">
-        <RouteLoader />
-        <HideOnAuthRoutes>
-          <Navbar profile={profile ?? null} />
-        </HideOnAuthRoutes>
-        <main className="flex-1">
-          <PageTransition>{children}</PageTransition>
-        </main>
-        <HideOnAuthRoutes>
-          <Footer />
-        </HideOnAuthRoutes>
+        <FavoritesProvider userId={profile?.id ?? null}>
+          <RouteLoader />
+          <HideOnAuthRoutes>
+            <Navbar profile={profile ?? null} />
+          </HideOnAuthRoutes>
+          <main className="flex-1">
+            <PageTransition>{children}</PageTransition>
+          </main>
+          <HideOnAuthRoutes>
+            <Footer />
+          </HideOnAuthRoutes>
+        </FavoritesProvider>
         <Toaster
           position="top-right"
           richColors

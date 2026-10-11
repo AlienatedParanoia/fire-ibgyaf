@@ -7,6 +7,7 @@ import type {
   CommunitySubmission,
   Participation,
   StudentNote,
+  Announcement,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,8 @@ export interface AdminData {
   competitions: Competition[];
   submissions: CommunitySubmission[];
   notes: StudentNote[];
+  announcements: Announcement[];
+  userId: string;
   participation: Participation[];
   analytics: { id: string; event_type: string; created_at: string; user_id: string | null }[];
   counts: {
@@ -32,11 +35,12 @@ export interface AdminData {
     pendingClubs: number;
     pendingSubmissions: number;
     pendingNotes: number;
+    pendingAnnouncements: number;
   };
 }
 
 export default async function AdminPage() {
-  const { supabase } = await requireUser(["admin"]);
+  const { supabase, authUser } = await requireUser(["admin"]);
 
   const [
     usersRes,
@@ -54,6 +58,8 @@ export default async function AdminPage() {
     pendingClubCount,
     pendingSubCount,
     pendingNoteCount,
+    annRes,
+    pendingAnnCount,
   ] = await Promise.all([
     supabase.from("users").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("clubs").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
@@ -99,6 +105,8 @@ export default async function AdminPage() {
       .from("student_notes")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
+    supabase.from("announcements").select("*").order("created_at", { ascending: false }).limit(ROW_LIMIT),
+    supabase.from("announcements").select("id", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
   const data: AdminData = {
@@ -107,6 +115,8 @@ export default async function AdminPage() {
     competitions: (compsRes.data ?? []) as Competition[],
     submissions: (subsRes.data ?? []) as CommunitySubmission[],
     notes: (notesRes.data ?? []) as StudentNote[],
+    announcements: (annRes.data ?? []) as Announcement[],
+    userId: authUser!.id,
     participation: (partRes.data ?? []) as Participation[],
     analytics: (anRes.data ?? []) as AdminData["analytics"],
     counts: {
@@ -118,6 +128,7 @@ export default async function AdminPage() {
       pendingClubs: pendingClubCount.count ?? 0,
       pendingSubmissions: pendingSubCount.count ?? 0,
       pendingNotes: pendingNoteCount.count ?? 0,
+      pendingAnnouncements: pendingAnnCount.count ?? 0,
     },
   };
 

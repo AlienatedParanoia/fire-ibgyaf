@@ -4,12 +4,15 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Calendar, Mail, User, X, Clock, Pencil, Users as UsersIcon } from "lucide-react";
+import { Users, Calendar, Mail, Phone, User, X, Clock, Pencil, Heart, Users as UsersIcon } from "lucide-react";
 import { Select } from "@/components/ui/input";
 import { useFocusTrap, useModalStack } from "@/components/ui/dialog";
 import { JoinClubButton } from "./join-club-button";
 import { ClubFormDialog } from "./club-form-dialog";
-import { CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
+import { ClubChips, ClubProfile } from "./club-profile";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { useFavorites } from "@/components/favorites/favorites-provider";
+import { CLUB_CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
 import type { Club, Competition } from "@/lib/types";
 
 const BANNER_GRADIENT = "linear-gradient(135deg, #F75C4C 0%, #E0402F 70%, #020202 240%)";
@@ -18,17 +21,28 @@ export function ClubsGrid({
   clubs: initialClubs,
   compsByClub = {},
   isAdmin = false,
+  signedIn = false,
 }: {
   clubs: Club[];
   compsByClub?: Record<string, Competition[]>;
   isAdmin?: boolean;
+  signedIn?: boolean;
 }) {
   const [clubs, setClubs] = React.useState<Club[]>(initialClubs);
   const [category, setCategory] = React.useState("");
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [editing, setEditing] = React.useState<Club | null>(null);
+  const [savedOnly, setSavedOnly] = React.useState(false);
+  const { isFavorite } = useFavorites();
 
-  const filtered = category ? clubs.filter((c) => c.category === category) : clubs;
+  // Offer the standard categories plus any custom ones that actually appear on a club.
+  const categoryOptions = React.useMemo(() => {
+    const extra = clubs.map((c) => c.category).filter((c): c is string => !!c && !(CLUB_CATEGORIES as readonly string[]).includes(c));
+    return [...CLUB_CATEGORIES.filter((c) => clubs.some((x) => x.category === c)), ...Array.from(new Set(extra))];
+  }, [clubs]);
+  const filtered = clubs.filter(
+    (c) => (!category || c.category === category) && (!savedOnly || isFavorite("club", c.id))
+  );
   const active = clubs.find((c) => c.id === activeId) ?? null;
 
   useModalStack(!!active, () => setActiveId(null));
@@ -38,12 +52,23 @@ export function ClubsGrid({
       <div className="mb-6 flex items-center gap-3">
         <Select value={category} onChange={(e) => setCategory(e.target.value)} className="max-w-xs">
           <option value="">All categories</option>
-          {CATEGORIES.map((c) => (
+          {categoryOptions.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
         </Select>
+        <button
+          type="button"
+          aria-pressed={savedOnly}
+          onClick={() => setSavedOnly((v) => !v)}
+          className={cn(
+            "inline-flex h-10 items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors",
+            savedOnly ? "border-ember bg-ember/10 text-ember" : "border-ink/15 text-ink-soft hover:bg-paper"
+          )}
+        >
+          <Heart className={cn("h-4 w-4", savedOnly && "fill-current")} /> Saved
+        </button>
         <span className="text-sm text-ink-faint">
           <b className="text-ink">{filtered.length}</b> club{filtered.length === 1 ? "" : "s"}
         </span>
@@ -85,6 +110,7 @@ export function ClubsGrid({
             comps={compsByClub[active.id] ?? []}
             onClose={() => setActiveId(null)}
             isAdmin={isAdmin}
+            signedIn={signedIn}
             onEdit={() => setEditing(active)}
           />
         )}
@@ -178,6 +204,7 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
           height={84}
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
         />
+        <FavoriteButton type="club" id={club.id} className="absolute right-3 top-3 z-[2]" />
         <div className="absolute" style={{ left: 18, bottom: -22 }}>
           <div className="rounded-[13px] border-[3px] border-panel">
             <Avatar club={club} size={54} radius={11} />
@@ -215,12 +242,14 @@ function ClubModal({
   comps,
   onClose,
   isAdmin,
+  signedIn,
   onEdit,
 }: {
   club: Club;
   comps: Competition[];
   onClose: () => void;
   isAdmin: boolean;
+  signedIn: boolean;
   onEdit: () => void;
 }) {
   const panelRef = React.useRef<HTMLDivElement>(null);
@@ -265,6 +294,7 @@ function ClubModal({
               <Pencil className="h-4 w-4" />
             </button>
           )}
+          <FavoriteButton type="club" id={club.id} className="absolute right-16 top-4 z-[2]" />
           <button
             onClick={onClose}
             aria-label="Close"
@@ -298,14 +328,29 @@ function ClubModal({
             <JoinClubButton clubId={club.id} clubName={club.name} />
           </div>
 
+          <div className="mt-3">
+            <ClubChips club={club} />
+          </div>
+
           {club.description && (
             <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{club.description}</p>
           )}
 
+          <ClubProfile club={club} />
+
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />
             <InfoCard icon={<User className="h-3.5 w-3.5" />} label="Contact" value={club.contact_person} />
-            <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+            {signedIn ? (
+              <>
+                <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+                {club.contact_phone && (
+                  <InfoCard icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={club.contact_phone} />
+                )}
+              </>
+            ) : (
+              <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email & phone" value="Log in to see" />
+            )}
           </div>
 
           {comps.length > 0 && (

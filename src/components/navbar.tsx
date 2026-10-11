@@ -20,6 +20,7 @@ import { Logo } from "./logo";
 import { Button } from "./ui/button";
 import { buttonVariants } from "./ui/button-variants";
 import { NotificationsBell } from "./notifications-bell";
+import { GlobalSearch } from "./global-search";
 import { cn, initials } from "@/lib/utils";
 import type { AppUser } from "@/lib/types";
 
@@ -92,6 +93,7 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
 
         {/* right side */}
         <div className="flex items-center gap-2">
+          <GlobalSearch />
           {profile && (
             <div className="hidden md:block">
               <NotificationsBell userId={profile.id} emailReminders={profile.email_reminders ?? true} />

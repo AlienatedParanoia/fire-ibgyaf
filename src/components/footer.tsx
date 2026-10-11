@@ -8,6 +8,7 @@ const COLS = [
       { href: "/competitions", label: "Competitions" },
       { href: "/clubs", label: "Clubs" },
       { href: "/calendar", label: "Calendar" },
+      { href: "/announcements", label: "Announcements" },
     ],
   },
   {

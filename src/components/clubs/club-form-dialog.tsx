@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea, Label } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { CATEGORIES } from "@/lib/utils";
+import { CLUB_CATEGORIES } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { AppUser, Club } from "@/lib/types";
 
@@ -17,18 +17,34 @@ type FormState = {
   description: string;
   meeting_schedule: string;
   contact_email: string;
+  contact_phone: string;
   contact_person: string;
   logo_url: string | null;
   banner_url: string | null;
   leader_id: string;
   is_approved: boolean;
+  vision: string;
+  mission: string;
+  president: string;
+  vice_president: string;
+  secretary: string;
+  treasurer: string;
+  instagram: string;
+  linkedin: string;
+  website: string;
+  grade_requirements: string;
+  school: string;
+  is_open: boolean;
 };
 
 const EMPTY: FormState = {
   name: "", category: "", description: "",
-  meeting_schedule: "", contact_email: "", contact_person: "",
+  meeting_schedule: "", contact_email: "", contact_phone: "", contact_person: "",
   logo_url: null, banner_url: null, leader_id: "",
   is_approved: true,
+  vision: "", mission: "", president: "", vice_president: "", secretary: "", treasurer: "",
+  instagram: "", linkedin: "", website: "", grade_requirements: "",
+  school: "GIIS Singapore", is_open: true,
 };
 
 function fromClub(c: Club): FormState {
@@ -37,11 +53,18 @@ function fromClub(c: Club): FormState {
     description: c.description ?? "",
     meeting_schedule: c.meeting_schedule ?? "",
     contact_email: c.contact_email ?? "",
+    contact_phone: c.contact_phone ?? "",
     contact_person: c.contact_person ?? "",
     logo_url: c.logo_url ?? null,
     banner_url: c.banner_url ?? null,
     leader_id: c.leader_id ?? "",
     is_approved: c.is_approved,
+    vision: c.vision ?? "", mission: c.mission ?? "",
+    president: c.president ?? "", vice_president: c.vice_president ?? "",
+    secretary: c.secretary ?? "", treasurer: c.treasurer ?? "",
+    instagram: c.instagram ?? "", linkedin: c.linkedin ?? "", website: c.website ?? "",
+    grade_requirements: c.grade_requirements ?? "",
+    school: c.school ?? "", is_open: c.is_open !== false,
   };
 }
 
@@ -86,11 +109,24 @@ export function ClubFormDialog({
       description: form.description || null,
       meeting_schedule: form.meeting_schedule || null,
       contact_email: form.contact_email || null,
+      contact_phone: form.contact_phone || null,
       contact_person: form.contact_person || null,
       logo_url: form.logo_url || null,
       banner_url: form.banner_url || null,
       leader_id: form.leader_id || null,
       is_approved: form.is_approved,
+      vision: form.vision.trim() || null,
+      mission: form.mission.trim() || null,
+      president: form.president.trim() || null,
+      vice_president: form.vice_president.trim() || null,
+      secretary: form.secretary.trim() || null,
+      treasurer: form.treasurer.trim() || null,
+      instagram: form.instagram.trim() || null,
+      linkedin: form.linkedin.trim() || null,
+      website: form.website.trim() || null,
+      grade_requirements: form.grade_requirements.trim() || null,
+      school: form.school.trim() || "GIIS Singapore",
+      is_open: form.is_open,
     };
     if (club) {
       const { error } = await supabase.from("clubs").update(payload).eq("id", club.id);
@@ -123,7 +159,7 @@ export function ClubFormDialog({
           <Label>Category</Label>
           <Select value={form.category} onChange={set("category")}>
             <option value="">Select category</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {CLUB_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </Select>
         </div>
         <div>
@@ -138,10 +174,67 @@ export function ClubFormDialog({
           <Label>Contact Email</Label>
           <Input type="email" value={form.contact_email} onChange={set("contact_email")} placeholder="email@school.edu.sg" />
         </div>
+        <div>
+          <Label>Contact Phone</Label>
+          <Input value={form.contact_phone} onChange={set("contact_phone")} placeholder="+65 …" />
+        </div>
         <div className="sm:col-span-2">
           <Label>Description</Label>
           <Textarea value={form.description} onChange={set("description")} placeholder="What does this club do?" />
         </div>
+        <div>
+          <Label>School</Label>
+          <Input value={form.school} onChange={set("school")} placeholder="GIIS Singapore" />
+        </div>
+        <div>
+          <Label>Grade requirements</Label>
+          <Input value={form.grade_requirements} onChange={set("grade_requirements")} placeholder="e.g. Grades 9-12" />
+        </div>
+        <div>
+          <Label>Vision</Label>
+          <Textarea value={form.vision} onChange={set("vision")} />
+        </div>
+        <div>
+          <Label>Mission</Label>
+          <Textarea value={form.mission} onChange={set("mission")} />
+        </div>
+        <div>
+          <Label>President</Label>
+          <Input value={form.president} onChange={set("president")} />
+        </div>
+        <div>
+          <Label>Vice President</Label>
+          <Input value={form.vice_president} onChange={set("vice_president")} />
+        </div>
+        <div>
+          <Label>Secretary</Label>
+          <Input value={form.secretary} onChange={set("secretary")} />
+        </div>
+        <div>
+          <Label>Treasurer</Label>
+          <Input value={form.treasurer} onChange={set("treasurer")} />
+        </div>
+        <div>
+          <Label>Instagram</Label>
+          <Input value={form.instagram} onChange={set("instagram")} placeholder="@handle" />
+        </div>
+        <div>
+          <Label>LinkedIn</Label>
+          <Input value={form.linkedin} onChange={set("linkedin")} />
+        </div>
+        <div className="sm:col-span-2">
+          <Label>Website</Label>
+          <Input value={form.website} onChange={set("website")} placeholder="https://" />
+        </div>
+        <label className="flex cursor-pointer items-center gap-3 sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={form.is_open}
+            onChange={(e) => setForm((f) => ({ ...f, is_open: e.target.checked }))}
+            className="h-4 w-4 accent-ember"
+          />
+          <span className="text-sm font-medium text-ink">Open to new members</span>
+        </label>
         <div>
           <Label>Club leader</Label>
           <Select value={form.leader_id} onChange={set("leader_id")}>

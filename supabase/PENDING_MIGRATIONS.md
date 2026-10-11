@@ -12,6 +12,7 @@ Run these (Supabase Studio → SQL Editor, or `psql`) when ready, then tick them
 | ⏳ pending | `private/club-contacts.local.sql` | **Gitignored** (repo is public). Copies club contact phones/emails from the Lovable app. Run right after `migration-lovable-clubs.sql`. Signed-out visitors can't read these columns. |
 | ⏳ pending | `migration-announcements-favorites.sql` | `announcements` (admin publishes; club leaders submit as pending) and `favorites` tables with RLS. Run after `migration-hardening.sql`. |
 | ⏳ pending | `migration-roles-audit.sql` | `admin_audit_log`, `role_requests` (+ atomic `review_role_request()` RPC) and `club_roles`. Needs `migration-features.sql` (notifications) and `migration-hardening.sql` applied first. |
+| ⏳ pending | `migration-ai-tracking.sql` | `user_interactions`, `item_popularity` (rebuilt daily by `/api/cron/popularity`) and the `get_recommendations()` scoring function behind the For You page. |
 
 ## Notes on `migration-hardening.sql`
 

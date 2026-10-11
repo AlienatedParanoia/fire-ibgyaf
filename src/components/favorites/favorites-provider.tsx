@@ -3,6 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { trackInteraction } from "@/lib/track";
 import type { FavoriteType } from "@/lib/types";
 
 interface FavoritesCtx {
@@ -73,6 +74,7 @@ export function FavoritesProvider({ userId, children }: { userId: string | null;
         ? await supabase.from("favorites").delete().eq("user_id", userId).eq("item_type", type).eq("item_id", id)
         : await supabase.from("favorites").insert({ user_id: userId, item_type: type, item_id: id });
       inFlight.current.delete(k);
+      if (!error && !wasSaved) void trackInteraction(type, id, "save");
       // 23505 = already saved in another tab; the optimistic state is already right.
       if (error && error.code !== "23505") {
         setSaved((prev) => {

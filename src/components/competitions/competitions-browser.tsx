@@ -32,6 +32,7 @@ import { TeammatesPanel } from "./teammates-panel";
 import { InterestsDialog } from "@/components/interests-dialog";
 import { CATEGORIES, cn, daysUntil, deadlineUrgency, formatDate, safeHttpUrl } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { trackInteraction } from "@/lib/track";
 import type { Competition } from "@/lib/types";
 
 type SortKey = "foryou" | "deadline" | "newest" | "saved";
@@ -185,13 +186,17 @@ export function CompetitionsBrowser({
       const { error } = await supabase.from("participation").insert({ user_id: uid, competition_id: comp.id, status: "interested" });
       if (error) { toast.error("Failed to save."); setSavingId(null); return; }
       await supabase.from("analytics_events").insert({ event_type: "competition_saved", user_id: uid, reference_id: comp.id });
+      void trackInteraction("competition", comp.id, "save");
       setSavedIds((s) => new Set(s).add(comp.id));
       toast.success("Saved to your tracker");
     }
     setSavingId(null);
   }, [loggedIn, savedIds]);
 
-  const openCompetition = React.useCallback((comp: Competition) => setActive(comp), []);
+  const openCompetition = React.useCallback((comp: Competition) => {
+    setActive(comp);
+    void trackInteraction("competition", comp.id, "view");
+  }, []);
 
   function share(comp: Competition) {
     const url = `${window.location.origin}/competitions?c=${comp.id}`;

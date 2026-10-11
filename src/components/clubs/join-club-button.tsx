@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Users2, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { trackInteraction } from "@/lib/track";
 
 export function JoinClubButton({ clubId, clubName }: { clubId: string; clubName: string }) {
   const [joined, setJoined] = React.useState(false);
@@ -54,6 +55,7 @@ export function JoinClubButton({ clubId, clubName }: { clubId: string; clubName:
           user_id: auth.user.id,
           reference_id: clubId,
         });
+        void trackInteraction("club", clubId, "join");
         setJoined(true);
         toast.success(`You joined ${clubName} 🎉`);
       } else if (error.code === "23505") {

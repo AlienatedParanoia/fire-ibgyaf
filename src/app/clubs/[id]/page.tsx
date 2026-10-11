@@ -8,6 +8,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { JoinClubButton } from "@/components/clubs/join-club-button";
 import { ClubChips, ClubProfile } from "@/components/clubs/club-profile";
+import { TrackView } from "@/components/track-view";
 import { deadlineUrgency, formatDate, cn, optimizableImage } from "@/lib/utils";
 import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS } from "@/lib/clubs";
 import type { Club, ClubRole, Competition } from "@/lib/types";
@@ -70,6 +71,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
 
   return (
     <div>
+      <TrackView type="club" id={club.id} />
       <div className="relative h-48 bg-gradient-to-br from-fire to-electric sm:h-60">
         {club.banner_url && (
           <Image

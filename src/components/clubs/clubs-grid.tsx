@@ -12,6 +12,7 @@ import { ClubFormDialog } from "./club-form-dialog";
 import { ClubChips, ClubProfile } from "./club-profile";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { useFavorites } from "@/components/favorites/favorites-provider";
+import { trackInteraction } from "@/lib/track";
 import { CLUB_CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
 import type { Club, ClubRole, Competition } from "@/lib/types";
 
@@ -48,6 +49,10 @@ export function ClubsGrid({
   const active = clubs.find((c) => c.id === activeId) ?? null;
 
   useModalStack(!!active, () => setActiveId(null));
+
+  React.useEffect(() => {
+    if (activeId) void trackInteraction("club", activeId, "view");
+  }, [activeId]);
 
   return (
     <div>

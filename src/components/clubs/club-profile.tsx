@@ -1,6 +1,7 @@
 import { Globe, Instagram, Linkedin, GraduationCap, Building2 } from "lucide-react";
 import { cn, socialUrl } from "@/lib/utils";
 import { CLUB_ROLE_LABELS, groupTeam } from "@/lib/club-roles";
+import { clubBlurb } from "@/lib/clubs";
 import type { Club, ClubRole } from "@/lib/types";
 
 /** Open/closed + school + grade chips shown next to the club name. */
@@ -32,6 +33,11 @@ export function ClubChips({ club }: { club: Club }) {
 
 /** Vision, mission, leadership team and social links for a club. Renders nothing for empty fields. */
 export function ClubProfile({ club, team = [] }: { club: Club; team?: ClubRole[] }) {
+  // The intro paragraph falls back to the mission/vision; don't print the same text twice.
+  const blurb = clubBlurb(club);
+  const vision = club.vision && club.vision !== blurb ? club.vision : null;
+  const mission = club.mission && club.mission !== blurb ? club.mission : null;
+
   const leaders = [
     ["President", club.president],
     ["Vice President", club.vice_president],
@@ -47,14 +53,14 @@ export function ClubProfile({ club, team = [] }: { club: Club; team?: ClubRole[]
     ] as const
   ).filter(([, v]) => !!v?.trim());
 
-  if (!club.vision && !club.mission && leaders.length === 0 && links.length === 0 && team.length === 0) return null;
+  if (!vision && !mission && leaders.length === 0 && links.length === 0 && team.length === 0) return null;
 
   return (
     <div className="mt-6 space-y-5">
-      {(club.vision || club.mission) && (
+      {(vision || mission) && (
         <div className="grid gap-3 sm:grid-cols-2">
-          {club.vision && <TextBlock label="Vision" text={club.vision} />}
-          {club.mission && <TextBlock label="Mission" text={club.mission} />}
+          {vision && <TextBlock label="Vision" text={vision} />}
+          {mission && <TextBlock label="Mission" text={mission} />}
         </div>
       )}
 

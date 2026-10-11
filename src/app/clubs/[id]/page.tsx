@@ -10,7 +10,7 @@ import { JoinClubButton } from "@/components/clubs/join-club-button";
 import { ClubChips, ClubProfile } from "@/components/clubs/club-profile";
 import { TrackView } from "@/components/track-view";
 import { deadlineUrgency, formatDate, cn, optimizableImage } from "@/lib/utils";
-import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS } from "@/lib/clubs";
+import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS, categoryGradient, clubBlurb } from "@/lib/clubs";
 import type { Club, ClubRole, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
   return (
     <div>
       <TrackView type="club" id={club.id} />
-      <div className="relative h-48 bg-gradient-to-br from-fire to-electric sm:h-60">
+      <div className="relative h-48 sm:h-60" style={{ background: categoryGradient(club.category) }}>
         {club.banner_url && (
           <Image
             src={club.banner_url}
@@ -104,9 +104,11 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
               <div>
                 <div className="mb-1.5 flex items-center gap-2">
                   <CategoryBadge category={club.category} />
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users2 className="h-4 w-4" /> {club.member_count} members
-                  </span>
+                  {club.member_count > 0 && (
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Users2 className="h-4 w-4" /> {club.member_count} {club.member_count === 1 ? "member" : "members"}
+                    </span>
+                  )}
                 </div>
                 <h1 className="font-heading text-2xl font-bold text-charcoal sm:text-3xl">
                   {club.name}
@@ -120,11 +122,7 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             <ClubChips club={club} />
           </div>
 
-          {club.description && (
-            <p className="mt-6 whitespace-pre-line leading-relaxed text-charcoal/90">
-              {club.description}
-            </p>
-          )}
+          <p className="mt-6 whitespace-pre-line leading-relaxed text-charcoal/90">{clubBlurb(club)}</p>
 
           <ClubProfile club={club} team={team} />
 

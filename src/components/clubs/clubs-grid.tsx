@@ -13,10 +13,9 @@ import { ClubChips, ClubProfile } from "./club-profile";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { useFavorites } from "@/components/favorites/favorites-provider";
 import { trackInteraction } from "@/lib/track";
+import { categoryGradient, clubBlurb, clubLeadersLine } from "@/lib/clubs";
 import { CLUB_CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
 import type { Club, ClubRole, Competition } from "@/lib/types";
-
-const BANNER_GRADIENT = "linear-gradient(135deg, #F75C4C 0%, #E0402F 70%, #020202 240%)";
 
 export function ClubsGrid({
   clubs: initialClubs,
@@ -232,7 +231,7 @@ function Banner({
       </div>
     );
   }
-  return <div style={{ height, background: BANNER_GRADIENT, borderRadius: rounded }} className="w-full" />;
+  return <div style={{ height, background: categoryGradient(club.category), borderRadius: rounded }} className="w-full" />;
 }
 
 function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
@@ -268,17 +267,26 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
           <span className="rounded-full bg-beige px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
             {club.category ?? "Other"}
           </span>
-          <span className="flex items-center gap-1 text-xs text-ink-faint">
-            <Users className="h-3.5 w-3.5" /> {club.member_count}
-          </span>
+          {club.is_open === false ? (
+            <span className="text-xs font-medium text-ink-faint">Closed</span>
+          ) : club.member_count > 0 ? (
+            <span className="flex items-center gap-1 text-xs text-ink-faint">
+              <Users className="h-3.5 w-3.5" /> {club.member_count}
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-emerald-700">Open</span>
+          )}
         </div>
         <h3 className="font-heading text-[19px] font-medium leading-snug text-ink">{club.name}</h3>
-        {club.description && (
-          <p className="mt-2 line-clamp-2 flex-1 text-sm text-ink-soft">{club.description}</p>
+        <p className="mt-2 line-clamp-3 flex-1 text-sm text-ink-soft">{clubBlurb(club)}</p>
+        {clubLeadersLine(club) && (
+          <p className="mt-3.5 flex items-center gap-1.5 text-xs text-ink-faint">
+            <User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{clubLeadersLine(club)}</span>
+          </p>
         )}
         {club.meeting_schedule && (
-          <p className="mt-3.5 flex items-center gap-1.5 text-xs text-ink-faint">
-            <Calendar className="h-3.5 w-3.5" /> {club.meeting_schedule}
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-faint">
+            <Calendar className="h-3.5 w-3.5 shrink-0" /> {club.meeting_schedule}
           </p>
         )}
         <span className="mt-4 inline-flex items-center gap-1 text-[13.5px] font-semibold text-ink-faint transition-colors group-hover:text-coral">
@@ -371,9 +379,11 @@ function ClubModal({
                 <span className="rounded-full bg-beige px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
                   {club.category ?? "Other"}
                 </span>
-                <span className="flex items-center gap-1 text-[13px] text-ink-faint">
-                  <Users className="h-3.5 w-3.5" /> {club.member_count} members
-                </span>
+                {club.member_count > 0 && (
+                  <span className="flex items-center gap-1 text-[13px] text-ink-faint">
+                    <Users className="h-3.5 w-3.5" /> {club.member_count} {club.member_count === 1 ? "member" : "members"}
+                  </span>
+                )}
               </div>
               <h2 id={titleId} className="font-heading text-3xl font-medium leading-tight text-ink">
                 {club.name}
@@ -386,15 +396,17 @@ function ClubModal({
             <ClubChips club={club} />
           </div>
 
-          {club.description && (
-            <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{club.description}</p>
-          )}
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{clubBlurb(club)}</p>
 
           <ClubProfile club={club} team={team} />
 
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />
-            <InfoCard icon={<User className="h-3.5 w-3.5" />} label="Contact" value={club.contact_person} />
+            {club.meeting_schedule && (
+              <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />
+            )}
+            {club.contact_person && (
+              <InfoCard icon={<User className="h-3.5 w-3.5" />} label="Contact" value={club.contact_person} />
+            )}
             {signedIn ? (
               <>
                 <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />

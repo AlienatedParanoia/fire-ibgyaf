@@ -7,6 +7,7 @@ import { HideOnAuthRoutes } from "@/components/hide-on-auth-routes";
 import { PageTransition } from "@/components/page-transition";
 import { RouteLoader } from "@/components/route-loader";
 import { FavoritesProvider } from "@/components/favorites/favorites-provider";
+import { Chatbot } from "@/components/chat/chatbot";
 import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </main>
           <HideOnAuthRoutes>
             <Footer />
+            <Chatbot signedIn={!!profile} />
           </HideOnAuthRoutes>
         </FavoritesProvider>
         <Toaster

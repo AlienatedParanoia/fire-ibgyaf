@@ -99,7 +99,7 @@ async function main() {
   const leaderless = WITH_LEADERS ? clubs.filter((c) => !c.leader_id) : [];
   console.log(`Clubs: ${clubs.length} GIIS clubs (${leaderless.length} without a leader)`);
   console.log(`Will create: ${MEMBERS} demo members${WITH_LEADERS ? ` + ${leaderless.length} demo club leaders` : ""}`);
-  console.log(`Emails look like: ${slug("Aarav Sharma")}1@${DEMO_DOMAIN} (no mail is ever sent)`);
+  console.log(`Emails look like: demo-member-0001@${DEMO_DOMAIN} (no mail is ever sent)`);
   if (!GO) {
     console.log("\nDry run. Add --yes to actually create them.");
     return;
@@ -109,6 +109,7 @@ async function main() {
   claudeProgress("-n", "demo-seed", "-t", String(total));
   const realPresidents = new Set(clubs.map((c) => c.president?.toLowerCase()).filter(Boolean));
   const usedEmails = new Set();
+  let counter = 0;
   let made = 0;
   let failed = 0;
 
@@ -118,7 +119,8 @@ async function main() {
       const last = pick(LAST);
       const full = `${first} ${last}`;
       if (realPresidents.has(full.toLowerCase())) continue; // never reuse a real student's name
-      const email = `${slug(first)}.${slug(last)}${role === "club_leader" ? `.${label}` : Math.floor(Math.random() * 90 + 10)}@${DEMO_DOMAIN}`;
+      // Generic on purpose: no names in the address, nothing that looks like a real person's.
+      const email = `demo-${role === "club_leader" ? "leader" : "member"}-${String(++counter).padStart(4, "0")}@${DEMO_DOMAIN}`;
       if (usedEmails.has(email)) continue;
       usedEmails.add(email);
       const grade = pick(GRADES);

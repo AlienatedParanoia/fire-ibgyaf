@@ -36,3 +36,19 @@ Event approvals and club approvals already existed here (admin → Competition A
   way (`get_recommendations()`), with a short "why" shown on each card.
 - The chat assistant only sees public, approved data and requires a signed-in user. Its rate limit is
   best-effort per serverless instance; Gemini's own quota is the hard cap.
+
+## Demo data for marketing videos
+
+`node scripts/seed-demo.mjs --yes` fills the site with invented GIIS students who have joined clubs
+and a demo leader for each club without one; `node scripts/remove-demo.mjs --yes` deletes it all.
+Demo accounts all use generic `demo-member-0001@demo.projectfire.invalid` emails (never deliverable, never a real person),
+are created pre-confirmed so no email is sent, and only create club memberships — no views, saves or
+other interactions, so the For You picks and popularity scores stay driven by real students.
+Needs `SUPABASE_SERVICE_ROLE_KEY` and `DEMO_PASSWORD` in `.env.local`.
+
+## Inviting real club leaders
+
+Admin → Manage Clubs → the envelope icon on a club without a leader emails an invitation (prefilled
+with the club's contact address). The recipient sets their own password and becomes that club's
+leader when they accept. Requires `https://projectfire.dev/auth/confirm` in Supabase's allowed
+redirect URLs.

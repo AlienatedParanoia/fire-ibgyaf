@@ -409,7 +409,9 @@ function ClubModal({
             )}
             {signedIn ? (
               <>
-                <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+                {club.contact_email && (
+                  <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+                )}
                 {club.contact_phone && (
                   <InfoCard icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={club.contact_phone} />
                 )}

@@ -53,21 +53,15 @@ export function ClubProfile({ club, team = [] }: { club: Club; team?: ClubRole[]
     ] as const
   ).filter(([, v]) => !!v?.trim());
 
-  const hasLeadership = leaders.length > 0 || team.length > 0;
+  if (!vision && !mission && leaders.length === 0 && links.length === 0 && team.length === 0) return null;
 
   return (
     <div className="mt-6 space-y-5">
-      {vision || mission ? (
+      {(vision || mission) && (
         <div className="grid gap-3 sm:grid-cols-2">
           {vision && <TextBlock label="Vision" text={vision} />}
           {mission && <TextBlock label="Mission" text={mission} />}
         </div>
-      ) : (
-        // The intro above already covers a club that only has a mission/vision, so this only
-        // shows when the club has neither written.
-        !club.mission && !club.vision && (
-          <Placeholder>This club hasn&apos;t added a vision or mission yet.</Placeholder>
-        )
       )}
 
       {leaders.length > 0 && (
@@ -83,8 +77,6 @@ export function ClubProfile({ club, team = [] }: { club: Club; team?: ClubRole[]
           </div>
         </div>
       )}
-
-      {!hasLeadership && <Placeholder>Leadership details are coming soon.</Placeholder>}
 
       {team.length > 0 && (
         <div>
@@ -132,14 +124,6 @@ export function ClubProfile({ club, team = [] }: { club: Club; team?: ClubRole[]
         </div>
       )}
     </div>
-  );
-}
-
-function Placeholder({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="rounded-[12px] border-[1.5px] border-dashed border-ink/15 bg-paper/60 p-4 text-[13.5px] text-ink-faint">
-      {children}
-    </p>
   );
 }
 

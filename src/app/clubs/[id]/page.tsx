@@ -127,13 +127,17 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
           <ClubProfile club={club} team={team} />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <InfoCard icon={<Calendar className="h-4 w-4" />} label="Meets" value={club.meeting_schedule || "To be announced"} />
+            {club.meeting_schedule && (
+              <InfoCard icon={<Calendar className="h-4 w-4" />} label="Meets" value={club.meeting_schedule} />
+            )}
             {club.contact_person && (
               <InfoCard icon={<User className="h-4 w-4" />} label="Contact" value={club.contact_person} />
             )}
             {signedIn ? (
               <>
-                <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value={club.contact_email || "Not listed yet"} />
+                {club.contact_email && (
+                  <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value={club.contact_email} />
+                )}
                 {club.contact_phone && (
                   <InfoCard icon={<Phone className="h-4 w-4" />} label="Phone" value={club.contact_phone} />
                 )}

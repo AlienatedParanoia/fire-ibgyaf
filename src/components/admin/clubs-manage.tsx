@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Loader2, Users, UserCog } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Loader2, Users, UserCog, MailPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { ClubFormDialog } from "@/components/clubs/club-form-dialog";
 import { ClubMembersDialog } from "./club-members-panel";
 import { ClubTeamDialog } from "@/components/clubs/club-team-manager";
+import { InviteLeaderDialog } from "./invite-leader-dialog";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { logAudit } from "@/lib/audit";
@@ -31,6 +32,7 @@ export function ClubsManage({
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [membersFor, setMembersFor] = React.useState<Club | null>(null);
   const [teamFor, setTeamFor] = React.useState<Club | null>(null);
+  const [inviteFor, setInviteFor] = React.useState<Club | null>(null);
   const [deleting, setDeleting] = React.useState<string | null>(null);
   const membersEdited = React.useRef(false);
 
@@ -162,6 +164,11 @@ export function ClubsManage({
                       <Button variant="ghost" size="icon" onClick={() => setMembersFor(c)} aria-label="Manage members">
                         <Users className="h-4 w-4" />
                       </Button>
+                      {!c.leader_id && (
+                        <Button variant="ghost" size="icon" onClick={() => setInviteFor(c)} aria-label="Invite a leader">
+                          <MailPlus className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => setTeamFor(c)} aria-label="Manage team">
                         <UserCog className="h-4 w-4" />
                       </Button>
@@ -194,6 +201,17 @@ export function ClubsManage({
         onClose={closeDialog}
         onSaved={onSaved}
         users={users}
+      />
+
+      <InviteLeaderDialog
+        open={!!inviteFor}
+        club={inviteFor}
+        onClose={() => setInviteFor(null)}
+        onInvited={(id) => {
+          // The server has just made them the leader; mirror that locally and refresh the other tabs.
+          setItems((l) => l.map((x) => (x.id === id ? { ...x, leader_id: "pending-invite" } : x)));
+          onChanged?.();
+        }}
       />
 
       <ClubTeamDialog open={!!teamFor} club={teamFor} onClose={() => setTeamFor(null)} />

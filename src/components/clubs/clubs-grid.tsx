@@ -401,15 +401,22 @@ function ClubModal({
           <ClubProfile club={club} team={team} />
 
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {club.meeting_schedule && (
-              <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />
-            )}
+            <InfoCard
+              icon={<Calendar className="h-3.5 w-3.5" />}
+              label="Meets"
+              value={club.meeting_schedule || "To be announced"}
+            />
             {club.contact_person && (
               <InfoCard icon={<User className="h-3.5 w-3.5" />} label="Contact" value={club.contact_person} />
             )}
             {signedIn ? (
               <>
-                <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+                <InfoCard
+                  icon={<Mail className="h-3.5 w-3.5" />}
+                  label="Email"
+                  value={club.contact_email || "Not listed yet"}
+                  breakAll
+                />
                 {club.contact_phone && (
                   <InfoCard icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={club.contact_phone} />
                 )}

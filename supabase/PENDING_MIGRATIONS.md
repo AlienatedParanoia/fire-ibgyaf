@@ -43,3 +43,4 @@ statement and the SQL editor rolls the whole script back.
 - Deadlines/event dates are **relative** (`current_date + interval 'N days'`) so listings always read as upcoming. Replace with real annual deadlines when known.
 - Rows already present in `seed.sql` (SSEF, SMO, Conrad Challenge, F1 in Schools, UOB Painting of the Year, National Schools Debating) were intentionally **excluded** to avoid duplicates.
 - `club_id` is `null` (not tied to a F.I.R.E club). `is_featured` is set on ~9 marquee competitions.
+| ⏳ pending | `migration-roll-competition-dates.sql` | Moves the (all expired) competition deadlines and event dates forward by whole years so the finder has open competitions again. Approximate — verify real dates. Preview query first. |

@@ -41,7 +41,7 @@ Event approvals and club approvals already existed here (admin → Competition A
 
 `node scripts/seed-demo.mjs --yes` fills the site with invented GIIS students who have joined clubs
 and a demo leader for each club without one; `node scripts/remove-demo.mjs --yes` deletes it all.
-Demo accounts all use generic `demo-member-0001@demo.projectfire.invalid` emails (never deliverable, never a real person),
+Demo accounts get ordinary-looking addresses on our own domain (`@projectfire.dev`, never a real provider), are tagged `app_metadata.demo` so `remove-demo.mjs` can find them,
 are created pre-confirmed so no email is sent, and only create club memberships — no views, saves or
 other interactions, so the For You picks and popularity scores stay driven by real students.
 Needs `SUPABASE_SERVICE_ROLE_KEY` and `DEMO_PASSWORD` in `.env.local`.

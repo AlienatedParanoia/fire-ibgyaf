@@ -4,9 +4,11 @@
  * Fills the site with obviously-fake GIIS "students" who have joined clubs, plus a
  * demo club leader for every club that has none, so a recording shows a lived-in app.
  *
- *  • Every demo account uses an email ending in @demo.projectfire.invalid — a reserved
- *    domain that can never receive mail and never belongs to a real person. Names are
+ *  • Demo accounts get ordinary-looking addresses on YOUR OWN domain (@projectfire.dev), never
+ *    a real provider like gmail.com where the address could belong to a real person. Names are
  *    invented; nothing here uses real students' details.
+ *  • Each account is tagged app_metadata.demo = true, which is how remove-demo.mjs finds them
+ *    (the address itself doesn't give them away).
  *  • Accounts are created pre-confirmed, so NO emails are sent to anyone.
  *  • Only club memberships are created. No views / saves / interactions, so the
  *    popularity scores and For You picks stay driven by real students.
@@ -45,7 +47,7 @@ try {
   /* no .env.local — rely on real env */
 }
 
-const DEMO_DOMAIN = "demo.projectfire.invalid";
+const DEMO_DOMAIN = "projectfire.dev";
 const SCHOOL = "GIIS Singapore";
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(`--${n}`);
@@ -99,7 +101,7 @@ async function main() {
   const leaderless = WITH_LEADERS ? clubs.filter((c) => !c.leader_id) : [];
   console.log(`Clubs: ${clubs.length} GIIS clubs (${leaderless.length} without a leader)`);
   console.log(`Will create: ${MEMBERS} demo members${WITH_LEADERS ? ` + ${leaderless.length} demo club leaders` : ""}`);
-  console.log(`Emails look like: demo-member-0001@${DEMO_DOMAIN} (no mail is ever sent)`);
+  console.log(`Emails look like: aarav.sharma11@${DEMO_DOMAIN} (no mail is ever sent)`);
   if (!GO) {
     console.log("\nDry run. Add --yes to actually create them.");
     return;
@@ -119,8 +121,8 @@ async function main() {
       const last = pick(LAST);
       const full = `${first} ${last}`;
       if (realPresidents.has(full.toLowerCase())) continue; // never reuse a real student's name
-      // Generic on purpose: no names in the address, nothing that looks like a real person's.
-      const email = `demo-${role === "club_leader" ? "leader" : "member"}-${String(++counter).padStart(4, "0")}@${DEMO_DOMAIN}`;
+      // first.last + a number, like a school address; counter keeps them unique within this run.
+      const email = `${slug(first)}.${slug(last)}${String(++counter + 10).padStart(2, "0")}@${DEMO_DOMAIN}`;
       if (usedEmails.has(email)) continue;
       usedEmails.add(email);
       const grade = pick(GRADES);
@@ -129,6 +131,7 @@ async function main() {
         password,
         email_confirm: true,
         user_metadata: { full_name: full, school: SCHOOL, grade },
+        app_metadata: { demo: true }, // server-side only; users can't edit this
       });
       if (error || !data.user) continue;
       const patch = { interests: shuffle(INTERESTS).slice(0, 2 + Math.floor(Math.random() * 2)) };
@@ -178,7 +181,7 @@ async function main() {
 
   claudeProgress("-n", "demo-seed", "done", `${made} accounts, ${joined} memberships`);
   console.log(`\nCreated ${made} demo accounts (${failed} failed) and ${joined} club memberships.`);
-  console.log(`Log in as any of them with the DEMO_PASSWORD you set; emails end in @${DEMO_DOMAIN}.`);
+  console.log("Log in as any of them with the DEMO_PASSWORD you set. Remove them all with remove-demo.mjs.");
   console.log("Remove everything later with: node scripts/remove-demo.mjs --yes");
 }
 

@@ -1,8 +1,9 @@
 /**
  * F.I.R.E — remove everything created by scripts/seed-demo.mjs
  * ------------------------------------------------------------
- * Deletes every account whose email ends in @demo.projectfire.invalid (their profiles,
- * club memberships and leader links go with them) and un-assigns any club they led.
+ * Deletes every account tagged app_metadata.demo = true (their profiles, club memberships
+ * and leader links go with them) and un-assigns any club they led. As a second guard it
+ * only touches addresses on @projectfire.dev, so a real student's account is never deleted.
  *
  * Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (.env.local or the shell).
  * Usage:  node scripts/remove-demo.mjs          (preview)
@@ -23,7 +24,7 @@ try {
   /* no .env.local — rely on real env */
 }
 
-const DEMO_SUFFIX = "@demo.projectfire.invalid";
+const DEMO_SUFFIX = "@projectfire.dev";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) {
@@ -33,12 +34,20 @@ if (!url || !key) {
 const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 const GO = process.argv.includes("--yes");
 
-const { data: users, error } = await admin.from("users").select("id, email").like("email", `%${DEMO_SUFFIX}`);
-if (error) {
-  console.error(error.message);
-  process.exit(1);
+// Page through every auth user and keep the tagged ones.
+const ids = [];
+for (let page = 1; ; page++) {
+  const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+  if (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  const users = data?.users ?? [];
+  for (const u of users) {
+    if (u.app_metadata?.demo === true && (u.email ?? "").toLowerCase().endsWith(DEMO_SUFFIX)) ids.push(u.id);
+  }
+  if (users.length < 1000) break;
 }
-const ids = (users ?? []).map((u) => u.id);
 console.log(`Found ${ids.length} demo accounts.`);
 if (!ids.length) process.exit(0);
 if (!GO) {

@@ -13,6 +13,7 @@ import {
   Clock,
   CheckCircle2,
   Save,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select } from "@/components/ui/input";
@@ -22,9 +23,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { CATEGORIES, cn, formatDate, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import type { Club, Competition, CompFormat, CompRegion, ParticipationStatus } from "@/lib/types";
+import { LeaderAnnouncements } from "./leader-announcements";
+import { ClubTeamManager } from "@/components/clubs/club-team-manager";
+import type {
+  Announcement,
+  Club,
+  Competition,
+  CompFormat,
+  CompRegion,
+  ParticipationStatus,
+} from "@/lib/types";
 
-type Tab = "club" | "competitions" | "members";
+type Tab = "club" | "competitions" | "announcements" | "members";
 
 /** A row of the `club_members` RPC — safe profile fields only, no email. */
 export type ClubMember = {
@@ -50,10 +60,12 @@ export function ClubLeaderDashboard({
   initialComps,
   members,
   membersFailed,
+  initialAnnouncements = [],
 }: {
   userId: string;
   initialClub: Club | null;
   initialComps: Competition[];
+  initialAnnouncements?: Announcement[];
   members: ClubMember[];
   membersFailed: boolean;
 }) {
@@ -90,6 +102,7 @@ export function ClubLeaderDashboard({
   const tabs: { key: Tab; label: string; icon: React.ElementType; count?: number }[] = [
     { key: "club", label: "My Club", icon: Building2 },
     { key: "competitions", label: "Competitions", icon: Trophy, count: comps.length },
+    { key: "announcements", label: "Announcements", icon: Megaphone },
     {
       key: "members",
       label: "Members",
@@ -127,7 +140,18 @@ export function ClubLeaderDashboard({
       </div>
 
       {tab === "club" && (
-        <ClubForm userId={userId} club={club} onSaved={setClub} />
+        <div className="space-y-8">
+          <ClubForm userId={userId} club={club} onSaved={setClub} />
+          {club && (
+            <section className="max-w-2xl rounded-2xl border border-charcoal/10 bg-white p-6 shadow-sm">
+              <h3 className="mb-1 font-heading text-lg font-semibold text-charcoal">Club team</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Officers, core members and board shown on your public club page.
+              </p>
+              <ClubTeamManager clubId={club.id} />
+            </section>
+          )}
+        </div>
       )}
 
       {tab === "competitions" && (
@@ -168,6 +192,10 @@ export function ClubLeaderDashboard({
             onAdded={(c) => setComps((list) => [c, ...list])}
           />
         </div>
+      )}
+
+      {tab === "announcements" && (
+        <LeaderAnnouncements userId={userId} club={club} initial={initialAnnouncements} />
       )}
 
       {tab === "members" && (

@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Loader2, Flame, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
+import { GRADE_GROUPS } from "@/lib/grades";
+import { GoogleButton } from "@/components/auth/google-button";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 
 /**
@@ -16,17 +18,6 @@ import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client"
  * Redirect URLs allow-list in the Supabase dashboard or Supabase ignores it.
  */
 const confirmRedirectUrl = () => `${window.location.origin}/auth/confirm?next=/dashboard`;
-
-const GRADE_GROUPS: { label: string; options: string[] }[] = [
-  {
-    label: "Local (Singapore)",
-    options: ["Secondary 1", "Secondary 2", "Secondary 3", "Secondary 4", "Secondary 5", "JC1", "JC2", "Polytechnic", "ITE"],
-  },
-  {
-    label: "International",
-    options: ["Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"],
-  },
-];
 
 export default function SignupPage() {
   const router = useRouter();
@@ -161,6 +152,7 @@ export default function SignupPage() {
             </div>
           ) : (
             <>
+          <GoogleButton label="Sign up with Google" />
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <Label htmlFor="full_name">Full name</Label>

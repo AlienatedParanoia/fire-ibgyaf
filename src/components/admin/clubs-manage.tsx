@@ -2,14 +2,16 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Loader2, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Loader2, Users, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { ClubFormDialog } from "@/components/clubs/club-form-dialog";
 import { ClubMembersDialog } from "./club-members-panel";
+import { ClubTeamDialog } from "@/components/clubs/club-team-manager";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { SectionHeading } from "./users-section";
 import type { AppUser, Club } from "@/lib/types";
 
@@ -28,6 +30,7 @@ export function ClubsManage({
   const [editing, setEditing] = React.useState<Club | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [membersFor, setMembersFor] = React.useState<Club | null>(null);
+  const [teamFor, setTeamFor] = React.useState<Club | null>(null);
   const [deleting, setDeleting] = React.useState<string | null>(null);
   const membersEdited = React.useRef(false);
 
@@ -76,6 +79,7 @@ export function ClubsManage({
       setItems((l) => l.map((x) => x.id === c.id ? { ...x, is_approved: !next } : x));
       return;
     }
+    void logAudit(next ? "club.approve" : "club.unapprove", "club", c.id, { name: c.name });
     toast.success(next ? "Approved" : "Unapproved");
     onChanged?.();
   }
@@ -87,6 +91,7 @@ export function ClubsManage({
     setDeleting(c.id);
     const { error } = await supabase.from("clubs").delete().eq("id", c.id);
     if (error) { toast.error(error.message); setDeleting(null); return; }
+    void logAudit("club.delete", "club", c.id, { name: c.name });
     setItems((l) => l.filter((x) => x.id !== c.id));
     toast.success("Deleted");
     setDeleting(null);
@@ -157,6 +162,9 @@ export function ClubsManage({
                       <Button variant="ghost" size="icon" onClick={() => setMembersFor(c)} aria-label="Manage members">
                         <Users className="h-4 w-4" />
                       </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setTeamFor(c)} aria-label="Manage team">
+                        <UserCog className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(c)} aria-label="Edit">
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -187,6 +195,8 @@ export function ClubsManage({
         onSaved={onSaved}
         users={users}
       />
+
+      <ClubTeamDialog open={!!teamFor} club={teamFor} onClose={() => setTeamFor(null)} />
 
       <ClubMembersDialog
         open={!!membersFor}

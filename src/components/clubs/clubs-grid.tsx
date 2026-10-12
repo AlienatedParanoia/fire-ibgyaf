@@ -4,46 +4,121 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Calendar, Mail, User, X, Clock, Pencil, Users as UsersIcon } from "lucide-react";
+import { Users, Calendar, Mail, Phone, User, X, Clock, Pencil, Heart, Building2, Users as UsersIcon } from "lucide-react";
 import { Select } from "@/components/ui/input";
 import { useFocusTrap, useModalStack } from "@/components/ui/dialog";
 import { JoinClubButton } from "./join-club-button";
 import { ClubFormDialog } from "./club-form-dialog";
-import { CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
-import type { Club, Competition } from "@/lib/types";
-
-const BANNER_GRADIENT = "linear-gradient(135deg, #F75C4C 0%, #E0402F 70%, #020202 240%)";
+import { ClubChips, ClubProfile } from "./club-profile";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { useFavorites } from "@/components/favorites/favorites-provider";
+import { trackInteraction } from "@/lib/track";
+import { categoryGradient, clubBlurb, clubLeadersLine } from "@/lib/clubs";
+import { CLUB_CATEGORIES, cn, deadlineUrgency, optimizableImage } from "@/lib/utils";
+import type { Club, ClubRole, Competition } from "@/lib/types";
 
 export function ClubsGrid({
   clubs: initialClubs,
   compsByClub = {},
+  teamByClub = {},
   isAdmin = false,
+  signedIn = false,
 }: {
   clubs: Club[];
   compsByClub?: Record<string, Competition[]>;
+  teamByClub?: Record<string, ClubRole[]>;
   isAdmin?: boolean;
+  signedIn?: boolean;
 }) {
   const [clubs, setClubs] = React.useState<Club[]>(initialClubs);
   const [category, setCategory] = React.useState("");
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [editing, setEditing] = React.useState<Club | null>(null);
+  const [savedOnly, setSavedOnly] = React.useState(false);
+  const [school, setSchool] = React.useState("");
 
-  const filtered = category ? clubs.filter((c) => c.category === category) : clubs;
+  // Remember the chosen school between visits (best-effort: storage can be blocked).
+  React.useEffect(() => {
+    try {
+      setSchool(localStorage.getItem("fire-school") ?? "");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function chooseSchool(next: string) {
+    setSchool(next);
+    try {
+      if (next) localStorage.setItem("fire-school", next);
+      else localStorage.removeItem("fire-school");
+    } catch {
+      /* ignore */
+    }
+  }
+  const schools = React.useMemo(
+    () => Array.from(new Set(clubs.map((c) => c.school).filter((s): s is string => !!s))).sort(),
+    [clubs]
+  );
+  // A remembered school with no clubs (or from another device) shouldn't hide everything.
+  const activeSchool = schools.includes(school) ? school : "";
+  const { isFavorite } = useFavorites();
+
+  // Offer the standard categories plus any custom ones that actually appear on a club.
+  const categoryOptions = React.useMemo(() => {
+    const extra = clubs.map((c) => c.category).filter((c): c is string => !!c && !(CLUB_CATEGORIES as readonly string[]).includes(c));
+    return [...CLUB_CATEGORIES.filter((c) => clubs.some((x) => x.category === c)), ...Array.from(new Set(extra))];
+  }, [clubs]);
+  const filtered = clubs.filter(
+    (c) =>
+      (!activeSchool || c.school === activeSchool) &&
+      (!category || c.category === category) &&
+      (!savedOnly || isFavorite("club", c.id))
+  );
   const active = clubs.find((c) => c.id === activeId) ?? null;
 
   useModalStack(!!active, () => setActiveId(null));
 
+  React.useEffect(() => {
+    if (activeId) void trackInteraction("club", activeId, "view");
+  }, [activeId]);
+
   return (
     <div>
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+          <Select
+            value={activeSchool}
+            onChange={(e) => chooseSchool(e.target.value)}
+            aria-label="School"
+            className="max-w-[220px] pl-9"
+          >
+            <option value="">All schools</option>
+            {schools.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+        </div>
         <Select value={category} onChange={(e) => setCategory(e.target.value)} className="max-w-xs">
           <option value="">All categories</option>
-          {CATEGORIES.map((c) => (
+          {categoryOptions.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
         </Select>
+        <button
+          type="button"
+          aria-pressed={savedOnly}
+          onClick={() => setSavedOnly((v) => !v)}
+          className={cn(
+            "inline-flex h-10 items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors",
+            savedOnly ? "border-ember bg-ember/10 text-ember" : "border-ink/15 text-ink-soft hover:bg-paper"
+          )}
+        >
+          <Heart className={cn("h-4 w-4", savedOnly && "fill-current")} /> Saved
+        </button>
         <span className="text-sm text-ink-faint">
           <b className="text-ink">{filtered.length}</b> club{filtered.length === 1 ? "" : "s"}
         </span>
@@ -83,8 +158,10 @@ export function ClubsGrid({
           <ClubModal
             club={active}
             comps={compsByClub[active.id] ?? []}
+            team={teamByClub[active.id] ?? []}
             onClose={() => setActiveId(null)}
             isAdmin={isAdmin}
+            signedIn={signedIn}
             onEdit={() => setEditing(active)}
           />
         )}
@@ -154,7 +231,7 @@ function Banner({
       </div>
     );
   }
-  return <div style={{ height, background: BANNER_GRADIENT, borderRadius: rounded }} className="w-full" />;
+  return <div style={{ height, background: categoryGradient(club.category), borderRadius: rounded }} className="w-full" />;
 }
 
 function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
@@ -178,6 +255,7 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
           height={84}
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
         />
+        <FavoriteButton type="club" id={club.id} className="absolute right-3 top-3 z-[2]" />
         <div className="absolute" style={{ left: 18, bottom: -22 }}>
           <div className="rounded-[13px] border-[3px] border-panel">
             <Avatar club={club} size={54} radius={11} />
@@ -189,17 +267,26 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
           <span className="rounded-full bg-beige px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
             {club.category ?? "Other"}
           </span>
-          <span className="flex items-center gap-1 text-xs text-ink-faint">
-            <Users className="h-3.5 w-3.5" /> {club.member_count}
-          </span>
+          {club.is_open === false ? (
+            <span className="text-xs font-medium text-ink-faint">Closed</span>
+          ) : club.member_count > 0 ? (
+            <span className="flex items-center gap-1 text-xs text-ink-faint">
+              <Users className="h-3.5 w-3.5" /> {club.member_count}
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-emerald-700">Open</span>
+          )}
         </div>
         <h3 className="font-heading text-[19px] font-medium leading-snug text-ink">{club.name}</h3>
-        {club.description && (
-          <p className="mt-2 line-clamp-2 flex-1 text-sm text-ink-soft">{club.description}</p>
+        <p className="mt-2 line-clamp-3 flex-1 text-sm text-ink-soft">{clubBlurb(club)}</p>
+        {clubLeadersLine(club) && (
+          <p className="mt-3.5 flex items-center gap-1.5 text-xs text-ink-faint">
+            <User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{clubLeadersLine(club)}</span>
+          </p>
         )}
         {club.meeting_schedule && (
-          <p className="mt-3.5 flex items-center gap-1.5 text-xs text-ink-faint">
-            <Calendar className="h-3.5 w-3.5" /> {club.meeting_schedule}
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-faint">
+            <Calendar className="h-3.5 w-3.5 shrink-0" /> {club.meeting_schedule}
           </p>
         )}
         <span className="mt-4 inline-flex items-center gap-1 text-[13.5px] font-semibold text-ink-faint transition-colors group-hover:text-coral">
@@ -213,14 +300,18 @@ function ClubCard({ club, onOpen }: { club: Club; onOpen: () => void }) {
 function ClubModal({
   club,
   comps,
+  team,
   onClose,
   isAdmin,
+  signedIn,
   onEdit,
 }: {
   club: Club;
   comps: Competition[];
+  team: ClubRole[];
   onClose: () => void;
   isAdmin: boolean;
+  signedIn: boolean;
   onEdit: () => void;
 }) {
   const panelRef = React.useRef<HTMLDivElement>(null);
@@ -265,6 +356,7 @@ function ClubModal({
               <Pencil className="h-4 w-4" />
             </button>
           )}
+          <FavoriteButton type="club" id={club.id} className="absolute right-16 top-4 z-[2]" />
           <button
             onClick={onClose}
             aria-label="Close"
@@ -287,9 +379,11 @@ function ClubModal({
                 <span className="rounded-full bg-beige px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
                   {club.category ?? "Other"}
                 </span>
-                <span className="flex items-center gap-1 text-[13px] text-ink-faint">
-                  <Users className="h-3.5 w-3.5" /> {club.member_count} members
-                </span>
+                {club.member_count > 0 && (
+                  <span className="flex items-center gap-1 text-[13px] text-ink-faint">
+                    <Users className="h-3.5 w-3.5" /> {club.member_count} {club.member_count === 1 ? "member" : "members"}
+                  </span>
+                )}
               </div>
               <h2 id={titleId} className="font-heading text-3xl font-medium leading-tight text-ink">
                 {club.name}
@@ -298,14 +392,31 @@ function ClubModal({
             <JoinClubButton clubId={club.id} clubName={club.name} />
           </div>
 
-          {club.description && (
-            <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{club.description}</p>
-          )}
+          <div className="mt-3">
+            <ClubChips club={club} />
+          </div>
+
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{clubBlurb(club)}</p>
+
+          <ClubProfile club={club} team={team} />
 
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />
-            <InfoCard icon={<User className="h-3.5 w-3.5" />} label="Contact" value={club.contact_person} />
-            <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+            {club.meeting_schedule && (
+              <InfoCard icon={<Calendar className="h-3.5 w-3.5" />} label="Meets" value={club.meeting_schedule} />
+            )}
+            {club.contact_person && (
+              <InfoCard icon={<User className="h-3.5 w-3.5" />} label="Contact" value={club.contact_person} />
+            )}
+            {signedIn ? (
+              <>
+                <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={club.contact_email} breakAll />
+                {club.contact_phone && (
+                  <InfoCard icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={club.contact_phone} />
+                )}
+              </>
+            ) : (
+              <InfoCard icon={<Mail className="h-3.5 w-3.5" />} label="Email & phone" value="Log in to see" />
+            )}
           </div>
 
           {comps.length > 0 && (

@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { ClubLeaderDashboard, type ClubMember } from "@/components/club-leader/club-leader-dashboard";
-import type { Club, Competition } from "@/lib/types";
+import type { Announcement, Club, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +18,13 @@ export default async function ClubLeaderPage() {
     .from("competitions")
     .select("*")
     .eq("submitted_by", uid)
+    .order("created_at", { ascending: false });
+
+  // Own submissions only (the announcements policy also lets leaders see their own pending rows).
+  const { data: anns } = await supabase
+    .from("announcements")
+    .select("*")
+    .eq("author_id", uid)
     .order("created_at", { ascending: false });
 
   let members: ClubMember[] = [];
@@ -45,6 +52,7 @@ export default async function ClubLeaderPage() {
         initialComps={(comps ?? []) as Competition[]}
         members={members}
         membersFailed={membersFailed}
+        initialAnnouncements={(anns ?? []) as Announcement[]}
       />
     </div>
   );

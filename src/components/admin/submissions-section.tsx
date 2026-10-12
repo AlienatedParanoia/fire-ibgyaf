@@ -11,6 +11,7 @@ import { CategoryBadge } from "@/components/competitions/badges";
 import { SectionHeading } from "./users-section";
 import { cn, formatDate, safeHttpUrl } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import type { CommunitySubmission, SubmissionStatus } from "@/lib/types";
 
 const STATUS_STYLE: Record<SubmissionStatus, string> = {
@@ -95,6 +96,7 @@ export function SubmissionsSection({
       );
     }
 
+    void logAudit("submission.approve", s.type, s.id);
     setSubs((list) => list.map((x) => (x.id === s.id ? { ...x, status: "approved" } : x)));
     toast.success(`Approved — ${s.type} is now live 🎉`);
     setPending(null);
@@ -117,6 +119,7 @@ export function SubmissionsSection({
     setSubs((list) =>
       list.map((x) => (x.id === s.id ? { ...x, status: "rejected", admin_notes: notes } : x))
     );
+    void logAudit("submission.reject", s.type, s.id, { note: notes });
     toast.success("Submission rejected");
     setPending(null);
     onChanged?.();

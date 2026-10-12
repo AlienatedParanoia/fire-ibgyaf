@@ -54,6 +54,22 @@ export interface Club {
   is_approved: boolean;
   member_count: number;
   created_at: string;
+  // Richer profile fields (migration-lovable-clubs.sql). Optional so older rows/payloads still type-check.
+  vision?: string | null;
+  mission?: string | null;
+  president?: string | null;
+  vice_president?: string | null;
+  secretary?: string | null;
+  treasurer?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
+  grade_requirements?: string | null;
+  is_open?: boolean;
+  /** Contact details are only returned to signed-in users; undefined when hidden. */
+  contact_phone?: string | null;
+  school?: string | null;
+  tags?: string[] | null;
 }
 
 export interface Competition {
@@ -137,5 +153,62 @@ export interface StudentNote {
   body: string;
   status: SubmissionStatus;
   admin_notes: string | null;
+  created_at: string;
+}
+
+export type AnnouncementPriority = "low" | "medium" | "high";
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  priority: AnnouncementPriority;
+  status: SubmissionStatus;
+  author_id: string | null;
+  club_id: string | null;
+  created_at: string;
+}
+
+export type FavoriteType = "club" | "competition";
+
+export interface Favorite {
+  id: string;
+  user_id: string;
+  item_type: FavoriteType;
+  item_id: string;
+  created_at: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RoleRequest {
+  id: string;
+  user_id: string;
+  requested_role: "club_leader";
+  club_id: string | null;
+  message: string | null;
+  status: SubmissionStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export type ClubRoleType = "leader" | "officer" | "core" | "bod" | "member";
+
+export interface ClubRole {
+  id: string;
+  club_id: string;
+  display_name: string;
+  role: ClubRoleType;
+  title: string | null;
+  assigned_by: string | null;
   created_at: string;
 }

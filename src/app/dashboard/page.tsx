@@ -14,8 +14,11 @@ import { requireUser } from "@/lib/auth";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InterestsPrompt } from "@/components/interests-prompt";
+import { RequestLeaderCard } from "@/components/dashboard/request-leader-card";
+import { CompleteProfileCard } from "@/components/dashboard/complete-profile-card";
+import { DeleteAccountCard } from "@/components/dashboard/delete-account-card";
 import { daysUntil, deadlineUrgency, formatDate, cn } from "@/lib/utils";
-import type { Competition, Participation, CustomActivity } from "@/lib/types";
+import type { Competition, Participation, CustomActivity, RoleRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,9 @@ export default async function DashboardPage() {
   const { authUser, profile, supabase } = await requireUser();
   const uid = authUser!.id;
 
-  const [partRes, actRes] = await Promise.all([
+  const isStudent = profile?.role === "student";
+
+  const [partRes, actRes, reqRes, clubsRes] = await Promise.all([
     supabase
       .from("participation")
       .select("*, competitions(*)")
@@ -34,6 +39,18 @@ export default async function DashboardPage() {
       .select("*")
       .eq("user_id", uid)
       .order("created_at", { ascending: false }),
+    // Only students can ask to become club leaders.
+    isStudent
+      ? supabase
+          .from("role_requests")
+          .select("*")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(1)
+      : Promise.resolve({ data: null }),
+    isStudent
+      ? supabase.from("clubs").select("id, name").eq("is_approved", true).is("leader_id", null).order("name")
+      : Promise.resolve({ data: null }),
   ]);
 
   const participation = (partRes.data ?? []) as Participation[];
@@ -108,6 +125,18 @@ export default async function DashboardPage() {
       </header>
 
       <InterestsPrompt initialInterests={profile?.interests ?? []} />
+
+      {profile && (!profile.school || !profile.grade) && (
+        <CompleteProfileCard userId={uid} school={profile.school} grade={profile.grade} />
+      )}
+
+      {isStudent && (
+        <RequestLeaderCard
+          userId={uid}
+          latest={((reqRes.data ?? [])[0] as RoleRequest | undefined) ?? null}
+          clubs={(clubsRes.data ?? []) as { id: string; name: string }[]}
+        />
+      )}
 
       {/* summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -200,6 +229,8 @@ export default async function DashboardPage() {
           )}
         </section>
       </div>
+
+      {profile && <DeleteAccountCard email={profile.email} />}
     </div>
   );
 }

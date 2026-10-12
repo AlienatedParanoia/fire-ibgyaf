@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserEditDialog } from "./user-edit-dialog";
 import { cn, formatDate, initials } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import type { AppUser, UserRole } from "@/lib/types";
 
 const ROLE_STYLE: Record<UserRole, string> = {
@@ -48,6 +49,7 @@ export function UsersSection({
       toast.error(error.message);
       setUsers((l) => l.map((u) => (u.id === user.id ? { ...u, role: user.role } : u)));
     } else {
+      void logAudit("user.role_change", "user", user.id, { email: user.email, from: user.role, to: newRole });
       toast.success(`${user.full_name || user.email} is now ${newRole.replace("_", " ")}`);
       onChanged?.();
     }

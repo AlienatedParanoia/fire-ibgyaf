@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeading } from "./users-section";
 import { cn, formatDate } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 import type { StudentNote, SubmissionStatus } from "@/lib/types";
 
 const STATUS_STYLE: Record<SubmissionStatus, string> = {
@@ -42,6 +43,7 @@ export function NotesSection({
       .eq("id", n.id);
     setPending(null);
     if (error) return toast.error(error.message);
+    void logAudit("note.approve", "note", n.id);
     setNotes((list) => list.map((x) => (x.id === n.id ? { ...x, status: "approved" } : x)));
     toast.success("Approved — the note is on the wall 🎉");
     onChanged?.();
@@ -64,6 +66,7 @@ export function NotesSection({
     setNotes((list) =>
       list.map((x) => (x.id === n.id ? { ...x, status: "rejected", admin_notes: adminNotes } : x))
     );
+    void logAudit("note.reject", "note", n.id, { note: adminNotes });
     toast.success("Note rejected");
     onChanged?.();
   }
@@ -78,6 +81,7 @@ export function NotesSection({
     setPending(null);
     if (error) return toast.error(error.message);
     setNotes((list) => list.filter((x) => x.id !== n.id));
+    void logAudit("note.delete", "note", n.id);
     toast.success("Note deleted");
     onChanged?.();
   }

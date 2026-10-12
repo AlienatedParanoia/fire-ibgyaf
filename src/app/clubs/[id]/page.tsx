@@ -3,12 +3,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Mail, User, Calendar, Users2, ArrowLeft, CalendarClock } from "lucide-react";
+import { Mail, Phone, User, Calendar, Users2, ArrowLeft, CalendarClock } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { CategoryBadge } from "@/components/competitions/badges";
 import { JoinClubButton } from "@/components/clubs/join-club-button";
+import { ClubChips, ClubProfile } from "@/components/clubs/club-profile";
+import { TrackView } from "@/components/track-view";
 import { deadlineUrgency, formatDate, cn, optimizableImage } from "@/lib/utils";
-import type { Club, Competition } from "@/lib/types";
+import { CLUB_PUBLIC_COLUMNS, CLUB_CONTACT_COLUMNS, categoryGradient, clubBlurb } from "@/lib/clubs";
+import type { Club, ClubRole, Competition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -17,17 +20,25 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://projectfire.dev";
 // Cached so generateMetadata and the page itself share one pair of queries.
 const getClub = cache(async (id: string) => {
   const supabase = getSupabaseServer();
-  if (!supabase) return { club: null as Club | null, comps: [] as Competition[] };
-  const [{ data: club }, { data: comps }] = await Promise.all([
-    supabase.from("clubs").select("*").eq("id", id).maybeSingle(),
+  if (!supabase) return { club: null as Club | null, comps: [] as Competition[], team: [] as ClubRole[], signedIn: false };
+  // getSession only parses the auth cookie (no network call).
+  const { data: session } = await supabase.auth.getSession();
+  const signedIn = !!session.session;
+  const [{ data: club }, { data: comps }, { data: team }] = await Promise.all([
+    supabase
+      .from("clubs")
+      .select(signedIn ? `${CLUB_PUBLIC_COLUMNS}, ${CLUB_CONTACT_COLUMNS}` : CLUB_PUBLIC_COLUMNS)
+      .eq("id", id)
+      .maybeSingle(),
     supabase
       .from("competitions")
       .select("*")
       .eq("club_id", id)
       .eq("is_approved", true)
       .order("deadline", { ascending: true }),
+    supabase.from("club_roles").select("*").eq("club_id", id),
   ]);
-  return { club: club as Club | null, comps: (comps ?? []) as Competition[] };
+  return { club: club as unknown as Club | null, comps: (comps ?? []) as Competition[], team: (team ?? []) as ClubRole[], signedIn };
 });
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -55,12 +66,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ClubDetailPage({ params }: { params: { id: string } }) {
-  const { club, comps } = await getClub(params.id);
+  const { club, comps, team, signedIn } = await getClub(params.id);
   if (!club) notFound();
 
   return (
     <div>
-      <div className="relative h-48 bg-gradient-to-br from-fire to-electric sm:h-60">
+      <TrackView type="club" id={club.id} />
+      <div className="relative h-48 sm:h-60" style={{ background: categoryGradient(club.category) }}>
         {club.banner_url && (
           <Image
             src={club.banner_url}
@@ -92,9 +104,11 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
               <div>
                 <div className="mb-1.5 flex items-center gap-2">
                   <CategoryBadge category={club.category} />
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users2 className="h-4 w-4" /> {club.member_count} members
-                  </span>
+                  {club.member_count > 0 && (
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Users2 className="h-4 w-4" /> {club.member_count} {club.member_count === 1 ? "member" : "members"}
+                    </span>
+                  )}
                 </div>
                 <h1 className="font-heading text-2xl font-bold text-charcoal sm:text-3xl">
                   {club.name}
@@ -104,11 +118,13 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             <JoinClubButton clubId={club.id} clubName={club.name} />
           </div>
 
-          {club.description && (
-            <p className="mt-6 whitespace-pre-line leading-relaxed text-charcoal/90">
-              {club.description}
-            </p>
-          )}
+          <div className="mt-4">
+            <ClubChips club={club} />
+          </div>
+
+          <p className="mt-6 whitespace-pre-line leading-relaxed text-charcoal/90">{clubBlurb(club)}</p>
+
+          <ClubProfile club={club} team={team} />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {club.meeting_schedule && (
@@ -117,8 +133,17 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
             {club.contact_person && (
               <InfoCard icon={<User className="h-4 w-4" />} label="Contact" value={club.contact_person} />
             )}
-            {club.contact_email && (
-              <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value={club.contact_email} />
+            {signedIn ? (
+              <>
+                {club.contact_email && (
+                  <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value={club.contact_email} />
+                )}
+                {club.contact_phone && (
+                  <InfoCard icon={<Phone className="h-4 w-4" />} label="Phone" value={club.contact_phone} />
+                )}
+              </>
+            ) : (
+              <InfoCard icon={<Mail className="h-4 w-4" />} label="Contact details" value="Log in to see email & phone" />
             )}
           </div>
         </div>

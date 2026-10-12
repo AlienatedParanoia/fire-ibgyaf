@@ -14,12 +14,14 @@ import {
   Shield,
   Users2,
   FolderHeart,
+  Sparkles,
   ChevronDown,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Button } from "./ui/button";
 import { buttonVariants } from "./ui/button-variants";
 import { NotificationsBell } from "./notifications-bell";
+import { GlobalSearch } from "./global-search";
 import { cn, initials } from "@/lib/utils";
 import type { AppUser } from "@/lib/types";
 
@@ -92,6 +94,7 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
 
         {/* right side */}
         <div className="flex items-center gap-2">
+          <GlobalSearch />
           {profile && (
             <div className="hidden md:block">
               <NotificationsBell userId={profile.id} emailReminders={profile.email_reminders ?? true} />
@@ -127,6 +130,7 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
                       </span>
                     </div>
                     <MenuItem href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />}>Dashboard</MenuItem>
+                    <MenuItem href="/for-you" icon={<Sparkles className="h-4 w-4" />}>For You</MenuItem>
                     <MenuItem href="/tracker" icon={<ListChecks className="h-4 w-4" />}>My Tracker</MenuItem>
                     <MenuItem href="/portfolio" icon={<FolderHeart className="h-4 w-4" />}>My Portfolio</MenuItem>
                     <MenuItem href="/calendar" icon={<CalendarDays className="h-4 w-4" />}>Calendar</MenuItem>
@@ -196,6 +200,7 @@ export function Navbar({ profile }: { profile: AppUser | null }) {
               {profile ? (
                 <>
                   <Link href="/dashboard" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-paper-2">Dashboard</Link>
+                  <Link href="/for-you" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-paper-2">For You</Link>
                   {(profile.role === "club_leader" || profile.role === "admin") && (
                     <Link href="/club-leader" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-paper-2">Club Dashboard</Link>
                   )}
